@@ -213,15 +213,21 @@
   // so lockW/lockL only reflect the 2025 season. This baseline is added to
   // the live-computed current-season totals in computeAllTimeStatsData()
   // so the All-Time section keeps itself current as 2026 progresses.
+  // Lock-of-the-Week records below are sourced directly from the "Season
+  // Stats" tab of the group's 2025 Google Sheet (2025 season only -- lock
+  // accuracy was not reliably tracked pre-2025, unlike the other columns,
+  // which remain the 2022-2025 combined reconstruction). 14 lock picks per
+  // player in 2025 reproduces the sheet's percentages exactly (e.g. Jack
+  // 6/14 = 43%, Cameron 8/14 = 57%, Brian 4/14 = 29%).
   var HIST_STATS = {
     players: {
-      'Jack':     { lockW: 5, lockL: 9, nonConW: 122, nonConL: 101, secW: 121, secL: 119, totalW: 243, totalL: 220 },
-      'Jay':      { lockW: 7, lockL: 5, nonConW: 121, nonConL: 101, secW: 110, secL: 116, totalW: 231, totalL: 217 },
-      'Andrew':   { lockW: 8, lockL: 6, nonConW: 103, nonConL: 92,  secW: 106, secL: 109, totalW: 209, totalL: 201 },
+      'Jack':     { lockW: 6, lockL: 8, nonConW: 122, nonConL: 101, secW: 121, secL: 119, totalW: 243, totalL: 220 },
+      'Jay':      { lockW: 7, lockL: 7, nonConW: 121, nonConL: 101, secW: 110, secL: 116, totalW: 231, totalL: 217 },
+      'Andrew':   { lockW: 7, lockL: 7, nonConW: 103, nonConL: 92,  secW: 106, secL: 109, totalW: 209, totalL: 201 },
       'Cameron':  { lockW: 8, lockL: 6, nonConW: 98,  nonConL: 124, secW: 121, secL: 117, totalW: 219, totalL: 241 },
-      'Brian':    { lockW: 6, lockL: 2, nonConW: 126, nonConL: 95,  secW: 115, secL: 119, totalW: 241, totalL: 214 },
-      'Harrison': { lockW: 7, lockL: 6, nonConW: 86,  nonConL: 77,  secW: 96,  secL: 88,  totalW: 182, totalL: 165 },
-      'Mike':     { lockW: 6, lockL: 6, nonConW: 89,  nonConL: 76,  secW: 94,  secL: 89,  totalW: 183, totalL: 165 }
+      'Brian':    { lockW: 4, lockL: 10, nonConW: 126, nonConL: 95,  secW: 115, secL: 119, totalW: 241, totalL: 214 },
+      'Harrison': { lockW: 7, lockL: 7, nonConW: 86,  nonConL: 77,  secW: 96,  secL: 88,  totalW: 182, totalL: 165 },
+      'Mike':     { lockW: 5, lockL: 9, nonConW: 89,  nonConL: 76,  secW: 94,  secL: 89,  totalW: 183, totalL: 165 }
     },
     schools: {
       'Alabama': { w: 108, l: 102 }, 'Arkansas': { w: 53, l: 72 }, 'Auburn': { w: 46, l: 72 },
@@ -509,10 +515,10 @@
       var r = data.players[name];
       var row = el('div', 'stats-row');
       row.appendChild(el('span', 'stats-cell stats-name', name));
-      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.lockW, r.lockW + r.lockL) + ' <span class="stats-record">(' + r.lockW + '-' + r.lockL + ')</span>'));
-      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.nonConW, r.nonConW + r.nonConL) + ' <span class="stats-record">(' + r.nonConW + '-' + r.nonConL + ')</span>'));
-      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.secW, r.secW + r.secL) + ' <span class="stats-record">(' + r.secW + '-' + r.secL + ')</span>'));
-      row.appendChild(el('span', 'stats-cell mono strong', fmtPct(r.totalW, r.totalW + r.totalL) + ' <span class="stats-record">(' + r.totalW + '-' + r.totalL + ')</span>'));
+      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.lockW, r.lockW + r.lockL)));
+      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.nonConW, r.nonConW + r.nonConL)));
+      row.appendChild(el('span', 'stats-cell mono', fmtPct(r.secW, r.secW + r.secL)));
+      row.appendChild(el('span', 'stats-cell mono strong', fmtPct(r.totalW, r.totalW + r.totalL)));
       table.appendChild(row);
     });
     wrap.appendChild(table);
@@ -536,7 +542,7 @@
       top.appendChild(teamBadge(x.school, 24));
       var info = el('div', 'tsc-info');
       info.appendChild(el('div', 'tsc-name', x.school));
-      info.appendChild(el('div', 'tsc-record mono', x.rec.w + '-' + x.rec.l + ' picked'));
+      info.appendChild(el('div', 'tsc-record mono', (x.rec.w + x.rec.l) + ' picked'));
       top.appendChild(info);
       card.appendChild(top);
       var pctRow = el('div', 'tsc-pct', fmtPct(x.rec.w, x.rec.w + x.rec.l));
