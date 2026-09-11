@@ -30,8 +30,15 @@ jobs:
         run: |
           if grep -q '00000000-0000-0000-0000-000000000000' wrangler.toml; then
             echo "Placeholder database_id found -- creating a real D1 database..."
+            set +e
             OUTPUT=$(npx wrangler d1 create sec-pickem-db 2>&1)
+            STATUS=$?
+            set -e
             echo "$OUTPUT"
+            if [ $STATUS -ne 0 ]; then
+              echo "wrangler d1 create failed with exit code $STATUS -- see output above." >&2
+              exit 1
+            fi
             NEW_ID=$(echo "$OUTPUT" | grep -oE 'database_id = "[a-f0-9-]+"' | head -1 | grep -oE '[a-f0-9-]{36}')
             if [ -z "$NEW_ID" ]; then
               echo "Could not parse a database_id from wrangler output -- see log above." >&2
