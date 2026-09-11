@@ -10,4 +10,4 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "sec-pickem-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "0bf0724f-ae3b-43b1-af11-1cae0b7b21c2"
