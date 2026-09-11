@@ -1,0 +1,22 @@
+{
+  "name": "sec-pickem",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create sec-pickem-db",
+    "db:migrate:remote": "wrangler d1 execute sec-pickem-db --remote --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute sec-pickem-db --local --file=./schema.sql",
+    "db:seed:remote": "node scripts/seed.js --remote",
+    "db:seed:local": "node scripts/seed.js --local"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.17"
+  },
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

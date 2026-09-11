@@ -1,0 +1,819 @@
+{
+  "week": "Week 2",
+  "players": [
+    "Jack",
+    "Cameron",
+    "Mike",
+    "Harrison",
+    "Brian",
+    "Jay",
+    "Andrew"
+  ],
+  "pins": {
+    "Jack": "63d548a2f5777e96059e578ac4237be1c3b441178e5f3490ed1d12bbbd76e776",
+    "Cameron": null,
+    "Mike": null,
+    "Harrison": null,
+    "Brian": null,
+    "Jay": null,
+    "Andrew": null
+  },
+  "commissionerPinHash": "676da41d627ee9539ede0cefe623db095f49ed3f6fd02914ac9ee6b8ccc58bf8",
+  "games": [
+    {
+      "matchup": "Mizzou @ Kansas",
+      "teamA": "Mizzou",
+      "teamB": "Kansas",
+      "spread": "MIZ -5.5"
+    },
+    {
+      "matchup": "Campbell @ Florida",
+      "teamA": "Florida",
+      "teamB": "Campbell",
+      "spread": "UF -49.5"
+    },
+    {
+      "matchup": "Arizona St @ Texas A&M",
+      "teamA": "Texas A&M",
+      "teamB": "Arizona St",
+      "spread": "TAMU -14.5"
+    },
+    {
+      "matchup": "Oklahoma @ Michigan",
+      "teamA": "Oklahoma",
+      "teamB": "Michigan",
+      "spread": "OU -5.5"
+    },
+    {
+      "matchup": "W. Kentucky @ Georgia",
+      "teamA": "Georgia",
+      "teamB": "W. Kentucky",
+      "spread": "UGA -40.5"
+    },
+    {
+      "matchup": "Alabama @ Kentucky",
+      "teamA": "Bama",
+      "teamB": "Kentucky",
+      "spread": "Bama -10.5"
+    },
+    {
+      "matchup": "Miss State @ Minnesota",
+      "teamA": "Minnesota",
+      "teamB": "Miss State",
+      "spread": "Minnesota -1.5"
+    },
+    {
+      "matchup": "Delaware @ Vanderbilt",
+      "teamA": "Vandy",
+      "teamB": "Delaware",
+      "spread": "Vandy -21"
+    },
+    {
+      "matchup": "Tennessee @ GA Tech",
+      "teamA": "Tennessee",
+      "teamB": "GA Tech",
+      "spread": "TENN -12.5"
+    },
+    {
+      "matchup": "Towson @ S. Carolina",
+      "teamA": "SCAR",
+      "teamB": "Towson",
+      "spread": "SCAR -43.5"
+    },
+    {
+      "matchup": "Ohio St @ Texas",
+      "teamA": "Ohio St",
+      "teamB": "Texas",
+      "spread": "TEX -1.5"
+    },
+    {
+      "matchup": "LA Tech @ LSU",
+      "teamA": "LSU",
+      "teamB": "LA Tech",
+      "spread": "LSU -35.5"
+    },
+    {
+      "matchup": "Charlotte @ Ole Miss",
+      "teamA": "Ole Miss",
+      "teamB": "Charlotte",
+      "spread": "Ole Miss -47.5"
+    },
+    {
+      "matchup": "S. Miss @ Auburn",
+      "teamA": "Auburn",
+      "teamB": "Southern Miss",
+      "spread": "AUB -32.5"
+    },
+    {
+      "matchup": "Arkansas @ Utah",
+      "teamA": "Arkansas",
+      "teamB": "Utah",
+      "spread": "Utah -12.5"
+    }
+  ],
+  "picks": {
+    "Jack": [
+      "Mizzou",
+      "Florida",
+      "Texas A&M",
+      "Oklahoma",
+      "W. Kentucky",
+      "Bama",
+      "Minnesota",
+      "Vandy",
+      "Tennessee",
+      "SCAR",
+      "Ohio St",
+      "LSU",
+      "Charlotte",
+      "Southern Miss",
+      "Arkansas"
+    ],
+    "Jay": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "Andrew": [
+      "Mizzou",
+      "Florida",
+      "Arizona St",
+      "Oklahoma",
+      "Georgia",
+      "Bama",
+      "Minnesota",
+      "Delaware",
+      "Tennessee",
+      "Towson",
+      "Ohio St",
+      "LSU",
+      "Charlotte",
+      "Southern Miss",
+      "Arkansas"
+    ],
+    "Cameron": [
+      "Mizzou",
+      "Florida",
+      "Texas A&M",
+      "Oklahoma",
+      "Georgia",
+      "Kentucky",
+      "Miss State",
+      "Vandy",
+      "Tennessee",
+      "Towson",
+      "Ohio St",
+      "LSU",
+      "Ole Miss",
+      "Southern Miss",
+      "Utah"
+    ],
+    "Brian": [
+      "Mizzou",
+      "Florida",
+      "Texas A&M",
+      "Oklahoma",
+      "Georgia",
+      "Bama",
+      "Minnesota",
+      "Vandy",
+      "Tennessee",
+      "Towson",
+      "Ohio St",
+      "LSU",
+      "Charlotte",
+      "Southern Miss",
+      "Utah"
+    ],
+    "Harrison": [
+      "Mizzou",
+      "Florida",
+      "Arizona St",
+      "Oklahoma",
+      "W. Kentucky",
+      "Bama",
+      "Minnesota",
+      "Vandy",
+      "Tennessee",
+      "Towson",
+      "Ohio St",
+      "LSU",
+      "Charlotte",
+      "Southern Miss",
+      "Utah"
+    ],
+    "Mike": [
+      "Mizzou",
+      "Florida",
+      "Arizona St",
+      "Oklahoma",
+      "Georgia",
+      "Bama",
+      "Miss State",
+      "Vandy",
+      "Tennessee",
+      "Towson",
+      "Texas",
+      "LSU",
+      "Charlotte",
+      "Southern Miss",
+      "Utah"
+    ]
+  },
+  "locks": {
+    "Jack": 5,
+    "Cameron": 1,
+    "Mike": 8,
+    "Harrison": 3,
+    "Brian": 1,
+    "Jay": null,
+    "Andrew": 11
+  },
+  "winners": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "history": [],
+  "upcoming": [
+    {
+      "label": "Week 3",
+      "games": [
+        {
+          "matchup": "FSU at Bama",
+          "teamA": "FSU",
+          "teamB": "Bama",
+          "spread": ""
+        },
+        {
+          "matchup": "UGA @ Arkansas",
+          "teamA": "UGA",
+          "teamB": "Arkansas",
+          "spread": ""
+        },
+        {
+          "matchup": "UF @ Auburn",
+          "teamA": "UF",
+          "teamB": "Auburn",
+          "spread": ""
+        },
+        {
+          "matchup": "UK @ TAMU",
+          "teamA": "UK",
+          "teamB": "TAMU",
+          "spread": ""
+        },
+        {
+          "matchup": "LSU @ Ole Miss",
+          "teamA": "LSU",
+          "teamB": "Ole Miss",
+          "spread": ""
+        },
+        {
+          "matchup": "NC St @ Vandy",
+          "teamA": "NC St",
+          "teamB": "Vandy",
+          "spread": ""
+        },
+        {
+          "matchup": "MSU @ SCAR",
+          "teamA": "MSU",
+          "teamB": "SCAR",
+          "spread": ""
+        },
+        {
+          "matchup": "Troy @ Mizzou",
+          "teamA": "Troy",
+          "teamB": "Mizzou",
+          "spread": ""
+        },
+        {
+          "matchup": "NMU @ OU",
+          "teamA": "NMU",
+          "teamB": "OU",
+          "spread": ""
+        },
+        {
+          "matchup": "Kenn St. @ Tenn",
+          "teamA": "Kenn St.",
+          "teamB": "Tenn",
+          "spread": ""
+        },
+        {
+          "matchup": "UTSA @ Texas",
+          "teamA": "UTSA",
+          "teamB": "Texas",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 4",
+      "games": [
+        {
+          "matchup": "Ole Miss @ UF",
+          "teamA": "Ole Miss",
+          "teamB": "UF",
+          "spread": ""
+        },
+        {
+          "matchup": "OU @ UGA",
+          "teamA": "OU",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "TAMU @ LSU",
+          "teamA": "TAMU",
+          "teamB": "LSU",
+          "spread": ""
+        },
+        {
+          "matchup": "SCAR @ Bama",
+          "teamA": "SCAR",
+          "teamB": "Bama",
+          "spread": ""
+        },
+        {
+          "matchup": "Mizzou @ MSU",
+          "teamA": "Mizzou",
+          "teamB": "MSU",
+          "spread": ""
+        },
+        {
+          "matchup": "Vandy @ Auburn",
+          "teamA": "Vandy",
+          "teamB": "Auburn",
+          "spread": ""
+        },
+        {
+          "matchup": "TX & Tenn",
+          "teamA": "TX",
+          "teamB": "Tenn",
+          "spread": ""
+        },
+        {
+          "matchup": "USA @ UK",
+          "teamA": "USA",
+          "teamB": "UK",
+          "spread": ""
+        },
+        {
+          "matchup": "Tulsa @ Arky",
+          "teamA": "Tulsa",
+          "teamB": "Arky",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 5",
+      "games": [
+        {
+          "matchup": "UF @ Mizzou",
+          "teamA": "UF",
+          "teamB": "Mizzou",
+          "spread": ""
+        },
+        {
+          "matchup": "Vandy @ UGA",
+          "teamA": "Vandy",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "Arky @ TAMU",
+          "teamA": "Arky",
+          "teamB": "TAMU",
+          "spread": ""
+        },
+        {
+          "matchup": "Bama @ MSU",
+          "teamA": "Bama",
+          "teamB": "MSU",
+          "spread": ""
+        },
+        {
+          "matchup": "Auburn @ Tenn",
+          "teamA": "Auburn",
+          "teamB": "Tenn",
+          "spread": ""
+        },
+        {
+          "matchup": "UK @ SCAR",
+          "teamA": "UK",
+          "teamB": "SCAR",
+          "spread": ""
+        },
+        {
+          "matchup": "McNeese @ LSU",
+          "teamA": "McNeese",
+          "teamB": "LSU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 6",
+      "games": [
+        {
+          "matchup": "SCAR @ UF",
+          "teamA": "SCAR",
+          "teamB": "UF",
+          "spread": ""
+        },
+        {
+          "matchup": "UGA @ Bama",
+          "teamA": "UGA",
+          "teamB": "Bama",
+          "spread": ""
+        },
+        {
+          "matchup": "LSU @ UK",
+          "teamA": "LSU",
+          "teamB": "UK",
+          "spread": ""
+        },
+        {
+          "matchup": "Ole Miss @ Vandy",
+          "teamA": "Ole Miss",
+          "teamB": "Vandy",
+          "spread": ""
+        },
+        {
+          "matchup": "TAMU @ Mizzou",
+          "teamA": "TAMU",
+          "teamB": "Mizzou",
+          "spread": ""
+        },
+        {
+          "matchup": "Tenn @ Arky",
+          "teamA": "Tenn",
+          "teamB": "Arky",
+          "spread": ""
+        },
+        {
+          "matchup": "Texas @ OU",
+          "teamA": "Texas",
+          "teamB": "OU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 7",
+      "games": [
+        {
+          "matchup": "Texas @ UF",
+          "teamA": "Texas",
+          "teamB": "UF",
+          "spread": ""
+        },
+        {
+          "matchup": "Auburn @ UGA",
+          "teamA": "Auburn",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "MSU @ LSU",
+          "teamA": "MSU",
+          "teamB": "LSU",
+          "spread": ""
+        },
+        {
+          "matchup": "Mizzou @ Ole Miss",
+          "teamA": "Mizzou",
+          "teamB": "Ole Miss",
+          "spread": ""
+        },
+        {
+          "matchup": "Bama @ Tenn",
+          "teamA": "Bama",
+          "teamB": "Tenn",
+          "spread": ""
+        },
+        {
+          "matchup": "Arky @ Vandy",
+          "teamA": "Arky",
+          "teamB": "Vandy",
+          "spread": ""
+        },
+        {
+          "matchup": "Citadel @ TAMU",
+          "teamA": "Citadel",
+          "teamB": "TAMU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 8",
+      "games": [
+        {
+          "matchup": "Ole Miss @ TX",
+          "teamA": "Ole Miss",
+          "teamB": "TX",
+          "spread": ""
+        },
+        {
+          "matchup": "TAMU @ Bama",
+          "teamA": "TAMU",
+          "teamB": "Bama",
+          "spread": ""
+        },
+        {
+          "matchup": "OU @ MSU",
+          "teamA": "OU",
+          "teamB": "MSU",
+          "spread": ""
+        },
+        {
+          "matchup": "Tenn @ SCAR",
+          "teamA": "Tenn",
+          "teamB": "SCAR",
+          "spread": ""
+        },
+        {
+          "matchup": "Vandy @ UK",
+          "teamA": "Vandy",
+          "teamB": "UK",
+          "spread": ""
+        },
+        {
+          "matchup": "LSU @ Auburn",
+          "teamA": "LSU",
+          "teamB": "Auburn",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 9",
+      "games": [
+        {
+          "matchup": "UF - UGA",
+          "teamA": "UF",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "MSU @ Texas",
+          "teamA": "MSU",
+          "teamB": "Texas",
+          "spread": ""
+        },
+        {
+          "matchup": "Auburn @ Ole Miss",
+          "teamA": "Auburn",
+          "teamB": "Ole Miss",
+          "spread": ""
+        },
+        {
+          "matchup": "SCAR @ OU",
+          "teamA": "SCAR",
+          "teamB": "OU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 10",
+      "games": [
+        {
+          "matchup": "OU @ UF",
+          "teamA": "OU",
+          "teamB": "UF",
+          "spread": ""
+        },
+        {
+          "matchup": "UGA @ Ole Miss",
+          "teamA": "UGA",
+          "teamB": "Ole Miss",
+          "spread": ""
+        },
+        {
+          "matchup": "Texas @ Mizzou",
+          "teamA": "Texas",
+          "teamB": "Mizzou",
+          "spread": ""
+        },
+        {
+          "matchup": "Bama @ LSU",
+          "teamA": "Bama",
+          "teamB": "LSU",
+          "spread": ""
+        },
+        {
+          "matchup": "TAMU @ SCAR",
+          "teamA": "TAMU",
+          "teamB": "SCAR",
+          "spread": ""
+        },
+        {
+          "matchup": "UK @ Tenn",
+          "teamA": "UK",
+          "teamB": "Tenn",
+          "spread": ""
+        },
+        {
+          "matchup": "Arky @ Auburn",
+          "teamA": "Arky",
+          "teamB": "Auburn",
+          "spread": ""
+        },
+        {
+          "matchup": "Vandy @ MSU",
+          "teamA": "Vandy",
+          "teamB": "MSU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 11",
+      "games": [
+        {
+          "matchup": "UF @ UK",
+          "teamA": "UF",
+          "teamB": "UK",
+          "spread": ""
+        },
+        {
+          "matchup": "Mizzou @ UGA",
+          "teamA": "Mizzou",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "Texas @ LSU",
+          "teamA": "Texas",
+          "teamB": "LSU",
+          "spread": ""
+        },
+        {
+          "matchup": "Ole Miss @ OU",
+          "teamA": "Ole Miss",
+          "teamB": "OU",
+          "spread": ""
+        },
+        {
+          "matchup": "Tenn @ TAMU",
+          "teamA": "Tenn",
+          "teamB": "TAMU",
+          "spread": ""
+        },
+        {
+          "matchup": "Bama @ Vandy",
+          "teamA": "Bama",
+          "teamB": "Vandy",
+          "spread": ""
+        },
+        {
+          "matchup": "SCAR @ Arky",
+          "teamA": "SCAR",
+          "teamB": "Arky",
+          "spread": ""
+        },
+        {
+          "matchup": "Auburn @ MSU",
+          "teamA": "Auburn",
+          "teamB": "MSU",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 12",
+      "games": [
+        {
+          "matchup": "Vandy @ UF",
+          "teamA": "Vandy",
+          "teamB": "UF",
+          "spread": ""
+        },
+        {
+          "matchup": "UGA @ SCAR",
+          "teamA": "UGA",
+          "teamB": "SCAR",
+          "spread": ""
+        },
+        {
+          "matchup": "Arky @ Texas",
+          "teamA": "Arky",
+          "teamB": "Texas",
+          "spread": ""
+        },
+        {
+          "matchup": "LSU @ Tennessee",
+          "teamA": "LSU",
+          "teamB": "Tennessee",
+          "spread": ""
+        },
+        {
+          "matchup": "TAMU @ OU",
+          "teamA": "TAMU",
+          "teamB": "OU",
+          "spread": ""
+        },
+        {
+          "matchup": "UK @ Mizzou",
+          "teamA": "UK",
+          "teamB": "Mizzou",
+          "spread": ""
+        }
+      ]
+    },
+    {
+      "label": "Week 13",
+      "games": [
+        {
+          "matchup": "UF @ FSU",
+          "teamA": "UF",
+          "teamB": "FSU",
+          "spread": ""
+        },
+        {
+          "matchup": "GT @ UGA",
+          "teamA": "GT",
+          "teamB": "UGA",
+          "spread": ""
+        },
+        {
+          "matchup": "MSU @ Ole Miss",
+          "teamA": "MSU",
+          "teamB": "Ole Miss",
+          "spread": ""
+        },
+        {
+          "matchup": "TEX @ TAMU",
+          "teamA": "TEX",
+          "teamB": "TAMU",
+          "spread": ""
+        },
+        {
+          "matchup": "LSU @ Arky",
+          "teamA": "LSU",
+          "teamB": "Arky",
+          "spread": ""
+        },
+        {
+          "matchup": "OU @ Mizzou",
+          "teamA": "OU",
+          "teamB": "Mizzou",
+          "spread": ""
+        },
+        {
+          "matchup": "Auburn @ Bama",
+          "teamA": "Auburn",
+          "teamB": "Bama",
+          "spread": ""
+        },
+        {
+          "matchup": "Tenn @ Vandy",
+          "teamA": "Tenn",
+          "teamB": "Vandy",
+          "spread": ""
+        },
+        {
+          "matchup": "L'ville @ UK",
+          "teamA": "L'ville",
+          "teamB": "UK",
+          "spread": ""
+        },
+        {
+          "matchup": "SCAR @ Clemson",
+          "teamA": "SCAR",
+          "teamB": "Clemson",
+          "spread": ""
+        }
+      ]
+    }
+  ],
+  "updatedAt": "2026-09-11T00:00:00.000Z",
+  "lastEditor": "Jack"
+}

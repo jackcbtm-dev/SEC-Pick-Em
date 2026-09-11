@@ -1,0 +1,82 @@
+name: Deploy SEC Pick'em
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure D1 database exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if grep -q '00000000-0000-0000-0000-000000000000' wrangler.toml; then
+            echo "Placeholder database_id found -- creating a real D1 database..."
+            OUTPUT=$(npx wrangler d1 create sec-pickem-db 2>&1)
+            echo "$OUTPUT"
+            NEW_ID=$(echo "$OUTPUT" | grep -oE 'database_id = "[a-f0-9-]+"' | head -1 | grep -oE '[a-f0-9-]{36}')
+            if [ -z "$NEW_ID" ]; then
+              echo "Could not parse a database_id from wrangler output -- see log above." >&2
+              exit 1
+            fi
+            echo "Created database with id: $NEW_ID"
+            sed -i "s/00000000-0000-0000-0000-000000000000/$NEW_ID/" wrangler.toml
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add wrangler.toml
+            git commit -m "chore: set real D1 database_id"
+            git push
+          else
+            echo "wrangler.toml already has a real database_id -- skipping creation."
+          fi
+
+      - name: Apply schema migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 execute sec-pickem-db --remote --file=./schema.sql
+
+      - name: Seed initial state (only if empty)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          COUNT_OUTPUT=$(npx wrangler d1 execute sec-pickem-db --remote --command "SELECT COUNT(*) as c FROM state;" 2>&1)
+          echo "$COUNT_OUTPUT"
+          if echo "$COUNT_OUTPUT" | grep -q '"c": 0'; then
+            echo "State table empty -- seeding initial data..."
+            node scripts/seed.js --remote
+          else
+            echo "State already present -- skipping seed (won't overwrite live data)."
+          fi
+
+      - name: Set AUTH_SECRET
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        run: echo "$AUTH_SECRET" | npx wrangler secret put AUTH_SECRET
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
