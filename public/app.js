@@ -125,6 +125,37 @@
     'OSU': { primary: '#BB0000', secondary: '#666666', abbr: 'OSU' }
   };
 
+  // Games are entered with a "matchup" label following the "Away @ Home"
+  // convention. teamA/teamB are separate "pick label" fields that aren't
+  // guaranteed to be typed in that same order, so for display purposes we
+  // recover the away/home order from the matchup text itself and fall back
+  // to the stored teamA/teamB order when it can't be parsed.
+  function awayHomeOrder(g) {
+    var parts = String(g.matchup || '').split(/\s+@\s+/);
+    if (parts.length === 2) {
+      var away = parts[0].trim(), home = parts[1].trim();
+      var ta = g.teamA || '', tb = g.teamB || '';
+      // Prefer canonical-name matching (handles alias mismatches like
+      // "UGA @ UF" vs. pick labels "Georgia"/"Florida"); fall back to a
+      // loose substring match for anything not in the alias table.
+      var canAway = (typeof canonTeam === 'function') ? canonTeam(away) : away;
+      var canHome = (typeof canonTeam === 'function') ? canonTeam(home) : home;
+      var canTa = (typeof canonTeam === 'function') ? canonTeam(ta) : ta;
+      var canTb = (typeof canonTeam === 'function') ? canonTeam(tb) : tb;
+      if (ta && canTa === canAway) return [g.teamA, g.teamB];
+      if (tb && canTb === canAway) return [g.teamB, g.teamA];
+      if (ta && canTa === canHome) return [g.teamB, g.teamA];
+      if (tb && canTb === canHome) return [g.teamA, g.teamB];
+      var lAway = away.toLowerCase(), lHome = home.toLowerCase();
+      var lTa = ta.toLowerCase(), lTb = tb.toLowerCase();
+      if (lTa && (lAway.indexOf(lTa) !== -1 || lTa.indexOf(lAway) !== -1)) return [g.teamA, g.teamB];
+      if (lTb && (lAway.indexOf(lTb) !== -1 || lTb.indexOf(lAway) !== -1)) return [g.teamB, g.teamA];
+      if (lTa && (lHome.indexOf(lTa) !== -1 || lTa.indexOf(lHome) !== -1)) return [g.teamB, g.teamA];
+      if (lTb && (lHome.indexOf(lTb) !== -1 || lTb.indexOf(lHome) !== -1)) return [g.teamA, g.teamB];
+    }
+    return [g.teamA, g.teamB];
+  }
+
   function teamAbbr(label) {
     var words = String(label).replace(/[^A-Za-z0-9.' ]/g, '').split(/\s+/).filter(Boolean);
     if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
@@ -858,7 +889,7 @@
       row.appendChild(el('div', 'pr-spread mono', g.spread));
       var controls = el('div', 'pr-controls');
       var choices = el('div', 'pr-choices');
-      [g.teamA, g.teamB].forEach(function (opt) {
+      awayHomeOrder(g).forEach(function (opt) {
         var sel = draft[i] === opt;
         var c = teamColor(opt);
         var btn = el('button', 'pick-btn' + (sel ? ' sel' : ''));
