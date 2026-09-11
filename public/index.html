@@ -196,6 +196,16 @@
   .picker-row:last-of-type { border-bottom: none; }
   .picker-row .pr-matchup { font-size: 13px; font-weight: 600; line-height: 1.3; }
   .picker-row .pr-spread { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); margin-top: 2px; }
+  .matchup-history {
+    display: flex; flex-direction: column; gap: 5px; margin-top: 4px; padding: 7px 9px;
+    background: var(--gold-tint); border: 1px solid var(--line-soft); border-radius: 8px;
+  }
+  .mh-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .mh-pill {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--ink-soft);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; line-height: 1.5;
+  }
+  .game-card .matchup-history { margin: 0 14px 10px; }
   .picker-row .pick-btn:disabled, .picker-row .lock-btn:disabled { opacity: 0.55; cursor: not-allowed; }
   .pr-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .pr-choices { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; }
