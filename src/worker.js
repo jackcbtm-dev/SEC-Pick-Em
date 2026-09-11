@@ -171,6 +171,15 @@ async function handleApi(request, env, url) {
     if (state.players.indexOf(player) === -1) return errorResponse('Unknown player.', 404);
     const len = state.games.length;
     if (!Array.isArray(body.picks) || body.picks.length !== len) return errorResponse('Picks do not match the current game list -- reload and try again.', 422);
+    // A commissioner-set deadline for the whole week: once it passes, no
+    // player (including one who never picked at all) can submit or change
+    // picks for this week. This is the real enforcement point -- the client
+    // also disables the picker UI past the deadline, but that's just UX, so
+    // a direct API call has to be blocked here too.
+    if (state.pickDeadline && new Date(state.pickDeadline).getTime() <= Date.now()) {
+      return errorResponse('Picks are locked -- the deadline for ' + state.week + ' passed at ' + new Date(state.pickDeadline).toLocaleString() + '.', 409);
+    }
+
     const valid = body.picks.every(function (p, i) {
       if (p === null) return true;
       const g = state.games[i];
@@ -179,6 +188,7 @@ async function handleApi(request, env, url) {
     if (!valid) return errorResponse('Invalid pick value.', 422);
     let lock = (body.lock === null || body.lock === undefined) ? null : Number(body.lock);
     if (lock !== null && (!Number.isInteger(lock) || lock < 0 || lock >= len || !body.picks[lock])) lock = null;
+
     const nextPicks = Object.assign({}, state.picks, { [player]: body.picks });
     const nextLocks = Object.assign({}, state.locks, { [player]: lock });
     await saveState(env, cloneStateWith(state, { picks: nextPicks, locks: nextLocks }, player));
@@ -295,7 +305,8 @@ async function handleApi(request, env, url) {
         });
         await saveState(env, cloneStateWith(state, {
           week: queued.label, games: nextGames, picks: emptyPicks, locks: emptyLocks,
-          winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming
+          winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming,
+          pickDeadline: null
         }, 'Commissioner'));
         return jsonResponse({ ok: true, advanced: true, archivedWeek: state.week, newWeek: queued.label });
       }
@@ -326,9 +337,16 @@ async function handleApi(request, env, url) {
       });
       await saveState(env, cloneStateWith(state, {
         week: label, games: nextGames, picks: emptyPicks, locks: emptyLocks,
-        winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming
+        winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming,
+        pickDeadline: null
       }, 'Commissioner'));
       return jsonResponse({ ok: true, week: label });
+    }
+
+    if (path === '/api/commissioner/deadline' && method === 'POST') {
+      const deadline = (body.deadline && String(body.deadline).trim()) || null;
+      await saveState(env, cloneStateWith(state, { pickDeadline: deadline }, 'Commissioner'));
+      return jsonResponse({ ok: true });
     }
   }
 

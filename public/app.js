@@ -740,6 +740,7 @@
       document.getElementById('save-btn').disabled = true;
       return;
     }
+    var locked = picksAreLocked();
     STATE.games.forEach(function (g, i) {
       var row = el('div', 'picker-row');
       row.appendChild(el('div', 'pr-matchup', g.matchup));
@@ -751,6 +752,7 @@
         var c = teamColor(opt);
         var btn = el('button', 'pick-btn' + (sel ? ' sel' : ''));
         btn.type = 'button';
+        btn.disabled = locked;
         btn.style.borderColor = c.primary;
         if (sel) {
           btn.style.background = c.primary;
@@ -761,33 +763,51 @@
         }
         btn.appendChild(teamBadge(opt));
         btn.appendChild(el('span', 'pb-label', opt));
-        btn.addEventListener('click', function () {
-          draft[i] = (draft[i] === opt) ? null : opt;
-          if (!draft[i] && draftLock === i) draftLock = null;
-          renderPicker();
-        });
+        if (!locked) {
+          btn.addEventListener('click', function () {
+            draft[i] = (draft[i] === opt) ? null : opt;
+            if (!draft[i] && draftLock === i) draftLock = null;
+            renderPicker();
+          });
+        }
         choices.appendChild(btn);
       });
       controls.appendChild(choices);
       var lockBtn = el('button', 'lock-btn' + (draftLock === i ? ' on' : ''), '&#9733;');
       lockBtn.type = 'button';
       lockBtn.title = 'Set as this week\'s Lock (+0.5 pt if correct)';
-      lockBtn.disabled = !draft[i];
-      lockBtn.addEventListener('click', function () {
-        if (!draft[i]) return;
-        draftLock = (draftLock === i) ? null : i;
-        renderPicker();
-      });
+      lockBtn.disabled = !draft[i] || locked;
+      if (!locked) {
+        lockBtn.addEventListener('click', function () {
+          if (!draft[i]) return;
+          draftLock = (draftLock === i) ? null : i;
+          renderPicker();
+        });
+      }
       controls.appendChild(lockBtn);
       row.appendChild(controls);
       rows.appendChild(row);
     });
     var made = draft.filter(Boolean).length;
     var lockNote = draftLock === null ? 'no Lock set' : ('Lock: Game ' + (draftLock + 1));
+    var deadlineBanner = document.getElementById('picker-deadline-banner');
+    if (deadlineBanner) {
+      if (locked) {
+        deadlineBanner.hidden = false;
+        deadlineBanner.className = 'banner err';
+        deadlineBanner.textContent = 'Picks locked -- the deadline passed at ' + fmtDeadline(STATE.pickDeadline) + '. Ask the commissioner if something needs to change.';
+      } else if (STATE.pickDeadline) {
+        deadlineBanner.hidden = false;
+        deadlineBanner.className = 'banner warn';
+        deadlineBanner.textContent = 'Picks lock at ' + fmtDeadline(STATE.pickDeadline) + '.';
+      } else {
+        deadlineBanner.hidden = true;
+      }
+    }
     document.getElementById('picker-progress').textContent = made + ' of ' + STATE.games.length + ' games · ' + lockNote;
     var saveBtn = document.getElementById('save-btn');
-    saveBtn.disabled = (capState !== 'ready');
-    saveBtn.textContent = capState === 'loading' ? 'Loading…' : (made === 0 ? 'Save Picks' : 'Save ' + made + ' Pick' + (made === 1 ? '' : 's'));
+    saveBtn.disabled = (capState !== 'ready') || locked;
+    saveBtn.textContent = capState === 'loading' ? 'Loading…' : (locked ? 'Picks Locked' : (made === 0 ? 'Save Picks' : 'Save ' + made + ' Pick' + (made === 1 ? '' : 's')));
   }
 
   function renderRosterStatus() {
@@ -977,6 +997,34 @@
       weekBlock.appendChild(el('p', '', nextQueued
         ? ('Next up: ' + nextQueued.label + ' — ' + nextQueued.games.length + ' matchups queued. Grade every game below and save to advance to it automatically.')
         : 'No more weeks queued — grading every game won\'t auto-advance until you queue one, so use "Start New Week" to name the next one manually.'));
+
+      var deadlineRow = el('div', 'auth-row deadline-row');
+      var deadlineIn = mkDateTimeInput(STATE.pickDeadline, 'eg-deadline');
+      var deadlineBtn = el('button', 'ghost-btn', 'Set Deadline');
+      deadlineBtn.type = 'button';
+      deadlineBtn.addEventListener('click', function () {
+        commAction('/api/commissioner/deadline', { deadline: localInputToIso(deadlineIn.value) }, function () {
+          showToast(deadlineIn.value ? ('Picks lock at ' + fmtDeadline(STATE.pickDeadline) + '.') : 'Deadline cleared -- picks are open.', 'ok');
+        });
+      });
+      deadlineRow.appendChild(deadlineIn);
+      deadlineRow.appendChild(deadlineBtn);
+      if (STATE.pickDeadline) {
+        var clearBtn = el('button', 'ghost-btn', picksAreLocked() ? 'Unlock (clear deadline)' : 'Clear');
+        clearBtn.type = 'button';
+        clearBtn.addEventListener('click', function () {
+          commAction('/api/commissioner/deadline', { deadline: null }, function () {
+            showToast('Deadline cleared -- picks are open.', 'ok');
+          });
+        });
+        deadlineRow.appendChild(clearBtn);
+      }
+      weekBlock.appendChild(deadlineRow);
+      weekBlock.appendChild(el('p', 'auth-err', ''));
+      weekBlock.appendChild(el('p', '',
+        STATE.pickDeadline
+          ? (picksAreLocked() ? ('Picks locked since ' + fmtDeadline(STATE.pickDeadline) + ' -- no player can change picks for ' + STATE.week + '.') : ('Picks lock automatically at ' + fmtDeadline(STATE.pickDeadline) + '.'))
+          : 'No deadline set -- players can change picks any time until you grade the games.'));
     } else if (viewed.kind === 'history') {
       weekBlock.appendChild(el('p', '', 'Editing a completed week — changes to spreads or results here update the season standings right away.'));
     } else {
@@ -1180,6 +1228,39 @@
     i.placeholder = placeholder;
     if (cls) i.className = cls;
     return i;
+  }
+
+  // Kickoff times are edited as the commissioner's own local wall-clock time
+  // (an HTML datetime-local input has no timezone of its own) and stored as
+  // a UTC ISO string, so comparisons against "now" on both client and server
+  // are unambiguous. Assumes the commissioner is in the same timezone as the
+  // games (true for this group) -- if that ever changes, this is the one
+  // spot to revisit.
+  function isoToLocalInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    function pad(n) { return String(n).length < 2 ? '0' + n : String(n); }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function localInputToIso(val) {
+    if (!val) return null;
+    var d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+  function mkDateTimeInput(value, cls) {
+    var i = document.createElement('input');
+    i.type = 'datetime-local';
+    if (cls) i.className = cls;
+    i.value = isoToLocalInput(value);
+    return i;
+  }
+  function picksAreLocked() {
+    return !!(STATE.pickDeadline && new Date(STATE.pickDeadline).getTime() <= Date.now());
+  }
+  function fmtDeadline(iso) {
+    return new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
   function saveGames() {

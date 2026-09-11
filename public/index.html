@@ -182,6 +182,7 @@
   .picker-row:last-of-type { border-bottom: none; }
   .picker-row .pr-matchup { font-size: 13px; font-weight: 600; line-height: 1.3; }
   .picker-row .pr-spread { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); margin-top: 2px; }
+  .picker-row .pick-btn:disabled, .picker-row .lock-btn:disabled { opacity: 0.55; cursor: not-allowed; }
   .pr-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .pr-choices { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; }
   .pick-btn {
@@ -245,6 +246,8 @@
   }
   .editgame-row input.eg-matchup, .editgame-row input.eg-spread { grid-column: 1 / -1; }
   .editgame-remove { grid-column: 1 / -1; justify-self: end; background: none; border: none; color: var(--ink-faint); font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 0; }
+
+  .eg-deadline { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px; padding: 7px 10px; font-size: 12.5px; color-scheme: light dark; }
 
   .pin-reset-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .pin-reset-row select { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px; padding: 8px 10px; font-size: 13px; flex: 1 1 140px; }
@@ -375,6 +378,7 @@
     <section>
       <div class="section-head"><h2>Make Your Picks</h2><span class="meta" id="picker-meta"></span></div>
       <div class="roster" id="roster"></div>
+      <div class="banner" id="picker-deadline-banner" style="margin:0 0 10px;" hidden></div>
       <div class="auth-card" id="picker-gate" hidden></div>
       <div class="picker-card" id="picker-card" hidden>
         <div id="picker-rows"></div>
