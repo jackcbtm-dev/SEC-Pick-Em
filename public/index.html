@@ -275,6 +275,11 @@
 
   .pin-reset-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .pin-reset-row select { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px; padding: 8px 10px; font-size: 13px; flex: 1 1 140px; }
+  .board-week-row { margin-bottom: 12px; }
+  .board-week-row select {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px;
+    padding: 8px 10px; font-size: 13px; width: 100%; max-width: 260px;
+  }
 
   .week-nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
   .week-nav::-webkit-scrollbar { display: none; }
@@ -421,17 +426,18 @@
   <div class="tab-panel" id="panel-board" hidden>
     <section>
       <div class="section-head"><h2 id="board-title">Week Board</h2><span class="meta" id="week-meta"></span></div>
+      <div class="board-week-row"><select id="board-week-select"></select></div>
       <div id="games"></div>
     </section>
   </div>
 
   <div class="tab-panel" id="panel-stats" hidden>
     <section>
-      <div class="section-head"><h2>Player Stats</h2><span class="meta">Season to date</span></div>
+      <div class="section-head"><h2>2026 Player Stats</h2><span class="meta">Season to date</span></div>
       <div id="stats-summary"></div>
     </section>
     <section>
-      <div class="section-head"><h2>Pick Accuracy by Team</h2><span class="meta">When a player picks this team, how often are they right</span></div>
+      <div class="section-head"><h2>2026 Pick Accuracy by Team</h2><span class="meta">Every pick involving that team, either side</span></div>
       <div id="stats-teams"></div>
     </section>
     <section>

@@ -32,12 +32,14 @@
   var currentPlayer = null;
   var draft = null;
   var draftLock = null;
+  var draftWeek = null; // which STATE.week `draft` was built for — see syncDraftToCurrentWeek()
   var draftWinners = [];
   var draftGames = null; // populated when games editor opens
   var editingGames = false;
   var pickerErr = '';
   var commErr = '';
   var commWeekKey = 'current'; // 'current' | 'history:<idx>' | 'upcoming:<idx>' — which week Commissioner is viewing
+  var boardWeekKey = 'current'; // 'current' | 'history:<idx>' — which week the Board tab is showing (players only browse current + past, never queued weeks)
 
   var TABS = ['standings', 'picks', 'board', 'stats', 'commissioner', 'more'];
   var currentTab = 'standings';
@@ -214,27 +216,38 @@
     'Miss State', 'Mizzou', 'Oklahoma', 'Ole Miss', 'S. Carolina', 'Tennessee', 'Texas', 'Texas A&M', 'Vandy'];
   var SCHOOL_ALIASES = {
     'Alabama': 'Alabama', 'Bama': 'Alabama',
-    'Arkansas': 'Arkansas', 'Arky': 'Arkansas',
-    'Auburn': 'Auburn',
+    'Arkansas': 'Arkansas', 'Arky': 'Arkansas', 'Akansas': 'Arkansas', 'Arkasas': 'Arkansas',
+    'Auburn': 'Auburn', 'Aurburn': 'Auburn',
     'Florida': 'Florida', 'UF': 'Florida',
     'Georgia': 'Georgia', 'UGA': 'Georgia',
     'Kentucky': 'Kentucky', 'UK': 'Kentucky',
     'LSU': 'LSU',
-    'Miss State': 'Miss State', 'MSU': 'Miss State',
+    'Miss State': 'Miss State', 'MSU': 'Miss State', 'Miss St': 'Miss State',
     'Mizzou': 'Mizzou',
     'Oklahoma': 'Oklahoma', 'OU': 'Oklahoma',
     'Ole Miss': 'Ole Miss',
     'SCAR': 'S. Carolina', 'S. Carolina': 'S. Carolina',
     'Tennessee': 'Tennessee', 'Tenn': 'Tennessee', 'TENN': 'Tennessee',
     'Texas': 'Texas', 'TX': 'Texas', 'TEX': 'Texas',
-    'Texas A&M': 'Texas A&M', 'TAMU': 'Texas A&M',
+    'Texas A&M': 'Texas A&M', 'TAMU': 'Texas A&M', 'TA&M': 'Texas A&M',
     'Vandy': 'Vandy', 'Vanderbilt': 'Vandy'
   };
   function schoolFor(label) {
-    return SCHOOL_ALIASES[label] || null;
+    if (!label) return null;
+    return SCHOOL_ALIASES[String(label).trim()] || null;
   }
   function isSecGame(g) {
     return !!(schoolFor(g.teamA) && schoolFor(g.teamB));
+  }
+  // Both SEC schools appearing in a game (as a de-duped array), used to
+  // credit team-accuracy stats to every school involved in the matchup,
+  // not just whichever team the player happened to pick.
+  function schoolsInGame(g) {
+    var out = [];
+    var a = schoolFor(g.teamA), b = schoolFor(g.teamB);
+    if (a) out.push(a);
+    if (b && b !== a) out.push(b);
+    return out;
   }
 
   // Static all-time baseline reconstructed game-by-game from the pool's
@@ -250,6 +263,11 @@
   // which remain the 2022-2025 combined reconstruction). 14 lock picks per
   // player in 2025 reproduces the sheet's percentages exactly (e.g. Jack
   // 6/14 = 43%, Cameron 8/14 = 57%, Brian 4/14 = 29%).
+  // schools below credits a pick to BOTH SEC schools in a matchup (not just
+  // whichever one was actually picked) -- e.g. correctly picking Georgia to
+  // cover against Alabama counts as a correct pick in both the Georgia row
+  // and the Alabama row, since it reflects a correct call about that game
+  // for either team's perspective. See schoolsInGame()/computeStatsData().
   var HIST_STATS = {
     players: {
       'Jack':     { lockW: 6, lockL: 8, nonConW: 122, nonConL: 101, secW: 121, secL: 119, totalW: 243, totalL: 220 },
@@ -261,29 +279,29 @@
       'Mike':     { lockW: 5, lockL: 9, nonConW: 89,  nonConL: 76,  secW: 94,  secL: 89,  totalW: 183, totalL: 165 }
     },
     schools: {
-      'Alabama': { w: 108, l: 102 }, 'Arkansas': { w: 53, l: 72 }, 'Auburn': { w: 46, l: 72 },
-      'Florida': { w: 90, l: 87 }, 'Georgia': { w: 78, l: 107 }, 'Kentucky': { w: 68, l: 56 },
-      'LSU': { w: 79, l: 87 }, 'Miss State': { w: 64, l: 61 }, 'Mizzou': { w: 89, l: 66 },
-      'Oklahoma': { w: 46, l: 24 }, 'Ole Miss': { w: 113, l: 83 }, 'S. Carolina': { w: 84, l: 58 },
-      'Tennessee': { w: 104, l: 78 }, 'Texas': { w: 68, l: 51 }, 'Texas A&M': { w: 53, l: 89 },
-      'Vandy': { w: 57, l: 62 }
+      'Alabama': { w: 144, l: 165 }, 'Arkansas': { w: 119, l: 142 }, 'Auburn': { w: 109, l: 147 },
+      'Florida': { w: 146, l: 138 }, 'Georgia': { w: 144, l: 156 }, 'Kentucky': { w: 121, l: 143 },
+      'LSU': { w: 139, l: 150 }, 'Miss State': { w: 121, l: 127 }, 'Mizzou': { w: 141, l: 139 },
+      'Oklahoma': { w: 89, l: 62 }, 'Ole Miss': { w: 160, l: 128 }, 'S. Carolina': { w: 141, l: 136 },
+      'Tennessee': { w: 166, l: 128 }, 'Texas': { w: 105, l: 92 }, 'Texas A&M': { w: 118, l: 147 },
+      'Vandy': { w: 115, l: 145 }
     }
   };
 
   // Same 2022-2025 reconstruction as HIST_STATS, but broken out per player
   // per SEC school (rather than combined across all players), since the
   // All-Time Accuracy by Team view shows one row per school with a column
-  // per player. Same aliasing/definition as HIST_STATS.schools: counts a
-  // pick as a "hit" for a school whenever that player picked that school,
-  // regardless of whether the game was SEC-vs-SEC or SEC-vs-NonCon.
+  // per player. Same both-teams-credited definition as HIST_STATS.schools:
+  // a correct pick in a game credits every SEC school in that matchup, not
+  // just whichever team the player actually picked.
   var HIST_PLAYER_SCHOOLS = {
-    'Jack': { 'Alabama': { w: 18, l: 14 }, 'Arkansas': { w: 9, l: 5 }, 'Auburn': { w: 6, l: 12 }, 'Florida': { w: 7, l: 8 }, 'Georgia': { w: 11, l: 18 }, 'Kentucky': { w: 8, l: 7 }, 'LSU': { w: 13, l: 13 }, 'Miss State': { w: 12, l: 11 }, 'Mizzou': { w: 12, l: 14 }, 'Oklahoma': { w: 6, l: 3 }, 'Ole Miss': { w: 18, l: 12 }, 'S. Carolina': { w: 14, l: 7 }, 'Tennessee': { w: 19, l: 14 }, 'Texas': { w: 11, l: 6 }, 'Texas A&M': { w: 10, l: 17 }, 'Vandy': { w: 6, l: 7 } },
-    'Jay': { 'Alabama': { w: 16, l: 15 }, 'Arkansas': { w: 12, l: 11 }, 'Auburn': { w: 6, l: 11 }, 'Florida': { w: 10, l: 13 }, 'Georgia': { w: 12, l: 17 }, 'Kentucky': { w: 12, l: 11 }, 'LSU': { w: 13, l: 16 }, 'Miss State': { w: 10, l: 9 }, 'Mizzou': { w: 15, l: 9 }, 'Oklahoma': { w: 5, l: 6 }, 'Ole Miss': { w: 18, l: 13 }, 'S. Carolina': { w: 15, l: 6 }, 'Tennessee': { w: 17, l: 14 }, 'Texas': { w: 9, l: 7 }, 'Texas A&M': { w: 9, l: 10 }, 'Vandy': { w: 7, l: 10 } },
-    'Andrew': { 'Alabama': { w: 15, l: 18 }, 'Arkansas': { w: 8, l: 13 }, 'Auburn': { w: 7, l: 13 }, 'Florida': { w: 18, l: 16 }, 'Georgia': { w: 9, l: 13 }, 'Kentucky': { w: 12, l: 8 }, 'LSU': { w: 8, l: 9 }, 'Miss State': { w: 10, l: 6 }, 'Mizzou': { w: 14, l: 9 }, 'Oklahoma': { w: 6, l: 0 }, 'Ole Miss': { w: 14, l: 11 }, 'S. Carolina': { w: 11, l: 8 }, 'Tennessee': { w: 14, l: 10 }, 'Texas': { w: 11, l: 7 }, 'Texas A&M': { w: 4, l: 14 }, 'Vandy': { w: 7, l: 8 } },
-    'Cameron': { 'Alabama': { w: 18, l: 11 }, 'Arkansas': { w: 11, l: 14 }, 'Auburn': { w: 7, l: 10 }, 'Florida': { w: 15, l: 13 }, 'Georgia': { w: 12, l: 15 }, 'Kentucky': { w: 8, l: 10 }, 'LSU': { w: 14, l: 16 }, 'Miss State': { w: 9, l: 12 }, 'Mizzou': { w: 14, l: 9 }, 'Oklahoma': { w: 7, l: 6 }, 'Ole Miss': { w: 15, l: 15 }, 'S. Carolina': { w: 11, l: 11 }, 'Tennessee': { w: 15, l: 14 }, 'Texas': { w: 12, l: 8 }, 'Texas A&M': { w: 8, l: 14 }, 'Vandy': { w: 7, l: 11 } },
-    'Brian': { 'Alabama': { w: 19, l: 18 }, 'Arkansas': { w: 9, l: 11 }, 'Auburn': { w: 9, l: 12 }, 'Florida': { w: 16, l: 18 }, 'Georgia': { w: 14, l: 21 }, 'Kentucky': { w: 15, l: 10 }, 'LSU': { w: 14, l: 16 }, 'Miss State': { w: 10, l: 9 }, 'Mizzou': { w: 11, l: 7 }, 'Oklahoma': { w: 5, l: 3 }, 'Ole Miss': { w: 19, l: 14 }, 'S. Carolina': { w: 13, l: 11 }, 'Tennessee': { w: 19, l: 8 }, 'Texas': { w: 9, l: 9 }, 'Texas A&M': { w: 7, l: 15 }, 'Vandy': { w: 9, l: 6 } },
-    'Harrison': { 'Alabama': { w: 13, l: 14 }, 'Arkansas': { w: 1, l: 11 }, 'Auburn': { w: 8, l: 7 }, 'Florida': { w: 11, l: 10 }, 'Georgia': { w: 9, l: 10 }, 'Kentucky': { w: 6, l: 4 }, 'LSU': { w: 7, l: 7 }, 'Miss State': { w: 9, l: 8 }, 'Mizzou': { w: 11, l: 9 }, 'Oklahoma': { w: 7, l: 1 }, 'Ole Miss': { w: 12, l: 8 }, 'S. Carolina': { w: 12, l: 7 }, 'Tennessee': { w: 9, l: 10 }, 'Texas': { w: 7, l: 7 }, 'Texas A&M': { w: 9, l: 9 }, 'Vandy': { w: 7, l: 8 } },
-    'Mike': { 'Alabama': { w: 9, l: 12 }, 'Arkansas': { w: 3, l: 7 }, 'Auburn': { w: 3, l: 7 }, 'Florida': { w: 13, l: 9 }, 'Georgia': { w: 11, l: 13 }, 'Kentucky': { w: 7, l: 6 }, 'LSU': { w: 10, l: 10 }, 'Miss State': { w: 4, l: 6 }, 'Mizzou': { w: 12, l: 9 }, 'Oklahoma': { w: 10, l: 5 }, 'Ole Miss': { w: 17, l: 10 }, 'S. Carolina': { w: 8, l: 8 }, 'Tennessee': { w: 11, l: 8 }, 'Texas': { w: 9, l: 7 }, 'Texas A&M': { w: 6, l: 10 }, 'Vandy': { w: 14, l: 12 } }
+    'Jack': { 'Alabama': { w: 26, l: 23 }, 'Arkansas': { w: 26, l: 15 }, 'Auburn': { w: 15, l: 26 }, 'Florida': { w: 22, l: 23 }, 'Georgia': { w: 20, l: 28 }, 'Kentucky': { w: 19, l: 23 }, 'LSU': { w: 23, l: 23 }, 'Miss State': { w: 20, l: 20 }, 'Mizzou': { w: 17, l: 28 }, 'Oklahoma': { w: 13, l: 9 }, 'Ole Miss': { w: 27, l: 19 }, 'S. Carolina': { w: 25, l: 19 }, 'Tennessee': { w: 26, l: 20 }, 'Texas': { w: 17, l: 12 }, 'Texas A&M': { w: 18, l: 24 }, 'Vandy': { w: 18, l: 23 } },
+    'Jay': { 'Alabama': { w: 21, l: 25 }, 'Arkansas': { w: 21, l: 18 }, 'Auburn': { w: 16, l: 22 }, 'Florida': { w: 18, l: 25 }, 'Georgia': { w: 22, l: 24 }, 'Kentucky': { w: 18, l: 23 }, 'LSU': { w: 20, l: 25 }, 'Miss State': { w: 19, l: 20 }, 'Mizzou': { w: 24, l: 19 }, 'Oklahoma': { w: 8, l: 13 }, 'Ole Miss': { w: 25, l: 19 }, 'S. Carolina': { w: 27, l: 16 }, 'Tennessee': { w: 24, l: 21 }, 'Texas': { w: 15, l: 12 }, 'Texas A&M': { w: 24, l: 17 }, 'Vandy': { w: 13, l: 25 } },
+    'Andrew': { 'Alabama': { w: 17, l: 26 }, 'Arkansas': { w: 15, l: 24 }, 'Auburn': { w: 14, l: 24 }, 'Florida': { w: 23, l: 18 }, 'Georgia': { w: 18, l: 21 }, 'Kentucky': { w: 20, l: 19 }, 'LSU': { w: 20, l: 21 }, 'Miss State': { w: 20, l: 15 }, 'Mizzou': { w: 20, l: 19 }, 'Oklahoma': { w: 15, l: 6 }, 'Ole Miss': { w: 21, l: 18 }, 'S. Carolina': { w: 19, l: 20 }, 'Tennessee': { w: 22, l: 20 }, 'Texas': { w: 17, l: 11 }, 'Texas A&M': { w: 11, l: 26 }, 'Vandy': { w: 16, l: 20 } },
+    'Cameron': { 'Alabama': { w: 29, l: 20 }, 'Arkansas': { w: 18, l: 22 }, 'Auburn': { w: 18, l: 22 }, 'Florida': { w: 25, l: 20 }, 'Georgia': { w: 24, l: 24 }, 'Kentucky': { w: 15, l: 27 }, 'LSU': { w: 21, l: 24 }, 'Miss State': { w: 15, l: 24 }, 'Mizzou': { w: 24, l: 20 }, 'Oklahoma': { w: 11, l: 11 }, 'Ole Miss': { w: 21, l: 25 }, 'S. Carolina': { w: 19, l: 25 }, 'Tennessee': { w: 23, l: 23 }, 'Texas': { w: 16, l: 13 }, 'Texas A&M': { w: 18, l: 24 }, 'Vandy': { w: 15, l: 26 } },
+    'Brian': { 'Alabama': { w: 22, l: 27 }, 'Arkansas': { w: 20, l: 21 }, 'Auburn': { w: 18, l: 22 }, 'Florida': { w: 20, l: 23 }, 'Georgia': { w: 20, l: 27 }, 'Kentucky': { w: 21, l: 19 }, 'LSU': { w: 21, l: 25 }, 'Miss State': { w: 20, l: 19 }, 'Mizzou': { w: 23, l: 21 }, 'Oklahoma': { w: 12, l: 10 }, 'Ole Miss': { w: 26, l: 19 }, 'S. Carolina': { w: 19, l: 23 }, 'Tennessee': { w: 33, l: 12 }, 'Texas': { w: 13, l: 16 }, 'Texas A&M': { w: 16, l: 25 }, 'Vandy': { w: 22, l: 18 } },
+    'Harrison': { 'Alabama': { w: 15, l: 21 }, 'Arkansas': { w: 7, l: 24 }, 'Auburn': { w: 16, l: 14 }, 'Florida': { w: 18, l: 16 }, 'Georgia': { w: 20, l: 15 }, 'Kentucky': { w: 15, l: 15 }, 'LSU': { w: 17, l: 16 }, 'Miss State': { w: 15, l: 13 }, 'Mizzou': { w: 16, l: 16 }, 'Oklahoma': { w: 16, l: 6 }, 'Ole Miss': { w: 19, l: 15 }, 'S. Carolina': { w: 19, l: 14 }, 'Tennessee': { w: 16, l: 19 }, 'Texas': { w: 12, l: 15 }, 'Texas A&M': { w: 17, l: 14 }, 'Vandy': { w: 14, l: 18 } },
+    'Mike': { 'Alabama': { w: 14, l: 23 }, 'Arkansas': { w: 12, l: 18 }, 'Auburn': { w: 12, l: 17 }, 'Florida': { w: 20, l: 13 }, 'Georgia': { w: 20, l: 17 }, 'Kentucky': { w: 13, l: 17 }, 'LSU': { w: 17, l: 16 }, 'Miss State': { w: 12, l: 16 }, 'Mizzou': { w: 17, l: 16 }, 'Oklahoma': { w: 14, l: 7 }, 'Ole Miss': { w: 21, l: 13 }, 'S. Carolina': { w: 13, l: 19 }, 'Tennessee': { w: 22, l: 13 }, 'Texas': { w: 15, l: 13 }, 'Texas A&M': { w: 14, l: 17 }, 'Vandy': { w: 17, l: 15 } }
   };
 
   // Short 2-letter tags for the per-player-per-team table, where a full
@@ -422,13 +440,15 @@
       (wk.games || []).forEach(function (g, idx) {
         var winner = (wk.winners || [])[idx];
         if (!winner || winner === 'PUSH') return;
+        var involved = schoolsInGame(g);
+        if (!involved.length) return;
         PLAYERS.forEach(function (name) {
           var pick = ((wk.picks || {})[name] || [])[idx];
           if (!pick) return;
-          var school = schoolFor(pick);
-          if (!school) return;
           var hit = pick === winner;
-          if (hit) out[name][school].w++; else out[name][school].l++;
+          involved.forEach(function (school) {
+            if (hit) out[name][school].w++; else out[name][school].l++;
+          });
         });
       });
     });
@@ -501,6 +521,7 @@
         var winner = (wk.winners || [])[idx];
         if (!winner || winner === 'PUSH') return;
         var secGame = isSecGame(g);
+        var involved = schoolsInGame(g);
         PLAYERS.forEach(function (name) {
           var pick = ((wk.picks || {})[name] || [])[idx];
           if (!pick) return;
@@ -510,8 +531,9 @@
           if (secGame) { if (hit) rec.secW++; else rec.secL++; }
           else { if (hit) rec.nonConW++; else rec.nonConL++; }
           if ((wk.locks || {})[name] === idx) { if (hit) rec.lockW++; else rec.lockL++; }
-          var school = schoolFor(pick);
-          if (school) { if (hit) schools[school].w++; else schools[school].l++; }
+          involved.forEach(function (school) {
+            if (hit) schools[school].w++; else schools[school].l++;
+          });
         });
       });
     });
@@ -645,7 +667,14 @@
     });
   }
 
-  function renderStatsTable(wrap, data) {
+  // Total win percentage as a sortable number; a player with zero games
+  // sorts to the bottom rather than tying with a 0% record.
+  function totalPct(r) {
+    var t = r.totalW + r.totalL;
+    return t ? (r.totalW / t) : -1;
+  }
+
+  function renderStatsTable(wrap, data, sortByTotal) {
     wrap.innerHTML = '';
     var table = el('div', 'stats-table');
     var head = el('div', 'stats-row stats-head');
@@ -653,7 +682,11 @@
       head.appendChild(el('span', 'stats-cell', h));
     });
     table.appendChild(head);
-    PLAYERS.forEach(function (name) {
+    var order = PLAYERS.slice();
+    if (sortByTotal) {
+      order.sort(function (a, b) { return totalPct(data.players[b]) - totalPct(data.players[a]); });
+    }
+    order.forEach(function (name) {
       var r = data.players[name];
       var row = el('div', 'stats-row');
       row.appendChild(el('span', 'stats-cell stats-name', name));
@@ -750,7 +783,7 @@
     if (!summary || !teamsWrap) return;
     var data = computeStatsData();
 
-    renderStatsTable(summary, data);
+    renderStatsTable(summary, data, true);
     if (!STATE.games.length && !STATE.history.length) {
       summary.appendChild(el('div', 'empty-note', 'No graded games yet this season — stats will fill in as weeks are scored.'));
     }
@@ -787,6 +820,7 @@
     var saved = STATE.picks[name] || [];
     draft = STATE.games.map(function (g, i) { return saved[i] || null; });
     draftLock = (STATE.locks[name] !== undefined) ? STATE.locks[name] : null;
+    draftWeek = STATE.week;
     renderRoster();
     renderPickerGate();
     renderTabDots();
@@ -873,7 +907,27 @@
     gate.appendChild(el('div', 'auth-err', pickerErr || ''));
   }
 
+  // The picker's in-progress draft is only (re)built from STATE when a
+  // player is selected/unlocked (selectPlayer()). If the week changes out
+  // from under an already-unlocked picker — the commissioner grades the
+  // last game and the server auto-advances to a new week, or games get
+  // edited mid-week — the background poll refreshes STATE but nothing
+  // used to resync `draft` to it, leaving a stale, wrong-length draft that
+  // the progress counter, the Save button label, and the actual save
+  // request all read from. Rebuild it whenever the week or the game count
+  // no longer matches what `draft` was built for; unsaved edits within the
+  // same, unchanged week are left alone.
+  function syncDraftToCurrentWeek() {
+    if (!currentPlayer || !draft) return;
+    if (draftWeek === STATE.week && draft.length === STATE.games.length) return;
+    var saved = STATE.picks[currentPlayer] || [];
+    draft = STATE.games.map(function (g, i) { return saved[i] || null; });
+    draftLock = (STATE.locks[currentPlayer] !== undefined) ? STATE.locks[currentPlayer] : null;
+    draftWeek = STATE.week;
+  }
+
   function renderPicker() {
+    syncDraftToCurrentWeek();
     var rows = document.getElementById('picker-rows');
     rows.innerHTML = '';
     if (!STATE.games.length) {
@@ -962,7 +1016,11 @@
       var row = el('div', 'rs-row' + (n === STATE.games.length && STATE.games.length > 0 ? ' done' : ''));
       row.appendChild(el('span', 'rs-name', name));
       if (lockIdx !== null && lockIdx !== undefined && STATE.games[lockIdx]) {
-        row.appendChild(el('span', 'rs-lock', '★ ' + ((STATE.picks[name] || [])[lockIdx] || '')));
+        // Show which team they locked only once picks are locked in for
+        // everyone (deadline passed) -- otherwise just show that they've
+        // set a lock, same "no one's picks visible before the deadline"
+        // rule as the Board tab, without exposing which team it is.
+        row.appendChild(el('span', 'rs-lock', picksAreLocked() ? ('★ ' + ((STATE.picks[name] || [])[lockIdx] || '')) : '★'));
       }
       row.appendChild(el('span', 'rs-count mono', n + '/' + STATE.games.length));
       wrap.appendChild(row);
@@ -985,9 +1043,12 @@
     return opts;
   }
 
-  function getViewedWeek() {
-    if (commWeekKey === 'current') return currentWeekView();
-    var parts = commWeekKey.split(':');
+  // Shared by getViewedWeek() (Commissioner tab — any week, including
+  // queued) and getBoardViewedWeek() (Board tab — current + history only).
+  // Returns null when the key no longer resolves (e.g. the queue shifted).
+  function resolveWeekByKey(key) {
+    if (key === 'current') return currentWeekView();
+    var parts = key.split(':');
     var kind = parts[0], idx = parseInt(parts[1], 10);
     if (kind === 'history' && STATE.history[idx]) {
       var h = STATE.history[idx];
@@ -997,8 +1058,27 @@
       var u = STATE.upcoming[idx];
       return { kind: 'upcoming', idx: idx, label: u.label, games: u.games, winners: null, picks: null, locks: null };
     }
+    return null;
+  }
+
+  function getViewedWeek() {
+    var v = resolveWeekByKey(commWeekKey);
+    if (v) return v;
     // Selection no longer resolves (e.g. the queue shifted) — fall back to current.
     commWeekKey = 'current';
+    return currentWeekView();
+  }
+
+  // Board tab never shows a not-yet-started (queued) week — there's nothing
+  // to show, since no one has picked yet and it's not the live week.
+  function boardWeekOptions() {
+    return weekOptions().filter(function (o) { return o.kind !== 'upcoming'; });
+  }
+
+  function getBoardViewedWeek() {
+    var v = resolveWeekByKey(boardWeekKey);
+    if (v && v.kind !== 'upcoming') return v;
+    boardWeekKey = 'current';
     return currentWeekView();
   }
 
@@ -1435,22 +1515,52 @@
   }
 
   function renderWeekNav() {
-    document.getElementById('board-title').textContent = STATE.week + ' Board';
-    var submitted = PLAYERS.filter(function (n) { return pickCount(n) > 0; }).length;
-    var graded = STATE.winners.filter(Boolean).length;
-    document.getElementById('week-meta').textContent = STATE.games.length + ' games · ' + submitted + '/' + PLAYERS.length + ' players in · ' + graded + '/' + STATE.games.length + ' graded';
+    var viewed = getBoardViewedWeek();
+    document.getElementById('board-title').textContent = viewed.label + ' Board';
+    var submitted = PLAYERS.filter(function (n) { return ((viewed.picks || {})[n] || []).some(Boolean); }).length;
+    var graded = (viewed.winners || []).filter(Boolean).length;
+    document.getElementById('week-meta').textContent = viewed.games.length + ' games · ' + submitted + '/' + PLAYERS.length + ' players in · ' + graded + '/' + viewed.games.length + ' graded';
+
+    var sel = document.getElementById('board-week-select');
+    if (sel) {
+      sel.innerHTML = '';
+      boardWeekOptions().forEach(function (o) {
+        var opt = document.createElement('option');
+        opt.value = o.key; opt.textContent = o.label;
+        if (o.key === boardWeekKey) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.onchange = function () {
+        boardWeekKey = sel.value;
+        renderWeekNav();
+        renderGames();
+      };
+    }
   }
 
   function renderGames() {
     var wrap = document.getElementById('games');
     wrap.innerHTML = '';
-    if (!STATE.games.length) {
-      wrap.appendChild(el('div', 'empty-note', 'No games posted for ' + STATE.week + ' yet.'));
+    var viewed = getBoardViewedWeek();
+    if (!viewed.games.length) {
+      wrap.appendChild(el('div', 'empty-note', 'No games posted for ' + viewed.label + ' yet.'));
       return;
     }
-    var allIn = PLAYERS.every(function (n) { return pickCount(n) > 0; });
-    STATE.games.forEach(function (g, idx) {
-      var winner = STATE.winners[idx];
+    // Picks stay hidden on the Board for the live week until the pick
+    // deadline passes — no player should be able to see anyone else's picks
+    // (or the pick split) while picks can still be changed. Past weeks are
+    // already final, so they always show in full.
+    var hidePicks = viewed.kind === 'current' && !picksAreLocked();
+    if (hidePicks) {
+      var note = el('div', 'banner info');
+      note.textContent = STATE.pickDeadline
+        ? ('Picks are hidden until the deadline passes at ' + fmtDeadline(STATE.pickDeadline) + '.')
+        : 'Picks are hidden until the commissioner sets and passes a deadline for ' + viewed.label + '.';
+      wrap.appendChild(note);
+    }
+    var allIn = viewed.kind === 'current' && PLAYERS.every(function (n) { return ((viewed.picks || {})[n] || []).some(Boolean); });
+    viewed.games.forEach(function (g, idx) {
+      var winner = (viewed.winners || [])[idx];
       var card = el('div', 'game-card');
       var stripe = el('div', 'gc-stripe');
       var stripeA = document.createElement('span');
@@ -1476,11 +1586,16 @@
         if (boardHist) card.appendChild(boardHist);
       }
 
+      if (hidePicks) {
+        wrap.appendChild(card);
+        return;
+      }
+
       var picksWrap = el('div', 'picks');
       var tally = {};
       PLAYERS.forEach(function (name) {
-        var pick = (STATE.picks[name] || [])[idx];
-        var isLock = STATE.locks[name] === idx;
+        var pick = ((viewed.picks || {})[name] || [])[idx];
+        var isLock = (viewed.locks || {})[name] === idx;
         var cls = 'pick';
         if (!pick) cls += ' empty';
         else if (winner && winner !== 'PUSH') cls += (pick === winner ? ' win' : ' loss');
@@ -1665,6 +1780,7 @@
           ? 'Results saved — standings updated. Queue next week\'s matchups to auto-advance next time.'
           : 'Results saved — standings updated.', 'ok');
       }
+      renderAll();
     });
   }
 
