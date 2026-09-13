@@ -84,6 +84,7 @@
     'Ole Miss': { primary: '#14213D', secondary: '#CE1126', abbr: 'MISS' },
     'SCAR': { primary: '#73000A', secondary: '#000000', abbr: 'SCAR' },
     'S. Carolina': { primary: '#73000A', secondary: '#000000', abbr: 'SCAR' },
+    'South Carolina': { primary: '#73000A', secondary: '#000000', abbr: 'SCAR' },
     'Tennessee': { primary: '#FF8200', secondary: '#FFFFFF', abbr: 'UT' },
     'Tenn': { primary: '#FF8200', secondary: '#FFFFFF', abbr: 'UT' },
     'TENN': { primary: '#FF8200', secondary: '#FFFFFF', abbr: 'UT' },
@@ -110,7 +111,12 @@
     'S. Miss': { primary: '#FFAB00', secondary: '#000000', abbr: 'USM' },
     'Utah': { primary: '#CC0000', secondary: '#000000', abbr: 'UTAH' },
     'FSU': { primary: '#782F40', secondary: '#CEB888', abbr: 'FSU' },
-    'NC St': { primary: '#CC0000', secondary: '#000000', abbr: 'NCST' },
+    'Florida St': { primary: '#782F40', secondary: '#CEB888', abbr: 'FSU' },
+    'Florida State': { primary: '#782F40', secondary: '#CEB888', abbr: 'FSU' },
+    'NC St': { primary: '#CC0000', secondary: '#FFFFFF', abbr: 'NCST' },
+    'NC State': { primary: '#CC0000', secondary: '#FFFFFF', abbr: 'NCST' },
+    'N.C. State': { primary: '#CC0000', secondary: '#FFFFFF', abbr: 'NCST' },
+    'NCSU': { primary: '#CC0000', secondary: '#FFFFFF', abbr: 'NCST' },
     'Troy': { primary: '#8A2432', secondary: '#FFFFFF', abbr: 'TROY' },
     'NMU': { primary: '#026937', secondary: '#FFFC00', abbr: 'NMU' },
     'New Mexico': { primary: '#BA0C2F', secondary: '#A7A8AA', abbr: 'NM' },
@@ -1527,13 +1533,6 @@
     // (or the pick split) while picks can still be changed. Past weeks are
     // already final, so they always show in full.
     var hidePicks = viewed.kind === 'current' && !picksAreLocked();
-    if (hidePicks) {
-      var note = el('div', 'banner info');
-      note.textContent = STATE.pickDeadline
-        ? ('Picks are hidden until the deadline passes at ' + fmtDeadline(STATE.pickDeadline) + '.')
-        : 'Picks are hidden until the commissioner sets and passes a deadline for ' + viewed.label + '.';
-      wrap.appendChild(note);
-    }
     var allIn = viewed.kind === 'current' && PLAYERS.every(function (n) { return ((viewed.picks || {})[n] || []).some(Boolean); });
     viewed.games.forEach(function (g, idx) {
       var winner = (viewed.winners || [])[idx];
