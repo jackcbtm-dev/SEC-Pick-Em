@@ -113,7 +113,11 @@
     'NC St': { primary: '#CC0000', secondary: '#000000', abbr: 'NCST' },
     'Troy': { primary: '#8A2432', secondary: '#FFFFFF', abbr: 'TROY' },
     'NMU': { primary: '#026937', secondary: '#FFFC00', abbr: 'NMU' },
+    'New Mexico': { primary: '#BA0C2F', secondary: '#A7A8AA', abbr: 'NM' },
     "Kenn St.": { primary: '#FFC629', secondary: '#231F20', abbr: 'KENN' },
+    'Kennesaw St': { primary: '#FFC629', secondary: '#231F20', abbr: 'KENN' },
+    'Kennesaw State': { primary: '#FFC629', secondary: '#231F20', abbr: 'KENN' },
+    'KSU': { primary: '#FFC629', secondary: '#231F20', abbr: 'KENN' },
     'UTSA': { primary: '#002A5C', secondary: '#F15A22', abbr: 'UTSA' },
     'McNeese': { primary: '#182B49', secondary: '#C41230', abbr: 'MCN' },
     'Citadel': { primary: '#003087', secondary: '#FFFFFF', abbr: 'CIT' },
@@ -699,39 +703,11 @@
     wrap.appendChild(table);
   }
 
-  function renderTeamGrid(wrap, data, emptyMsg) {
-    wrap.innerHTML = '';
-    var grid = el('div', 'team-stats-grid');
-    var ranked = SEC_SCHOOLS.map(function (s) { return { school: s, rec: data.schools[s] }; })
-      .filter(function (x) { return x.rec.w + x.rec.l > 0; })
-      .sort(function (a, b) { return (b.rec.w + b.rec.l) - (a.rec.w + a.rec.l); });
-    if (!ranked.length) {
-      wrap.appendChild(el('div', 'empty-note', emptyMsg));
-      return;
-    }
-    ranked.forEach(function (x) {
-      var c = teamColor(x.school);
-      var card = el('div', 'team-stat-card');
-      card.style.borderColor = c.primary;
-      var top = el('div', 'tsc-top');
-      top.appendChild(teamBadge(x.school, 24));
-      var info = el('div', 'tsc-info');
-      info.appendChild(el('div', 'tsc-name', x.school));
-      info.appendChild(el('div', 'tsc-record mono', (x.rec.w + x.rec.l) + ' picked'));
-      top.appendChild(info);
-      card.appendChild(top);
-      var pctRow = el('div', 'tsc-pct', fmtPct(x.rec.w, x.rec.w + x.rec.l));
-      pctRow.style.color = c.primary;
-      card.appendChild(pctRow);
-      grid.appendChild(card);
-    });
-    wrap.appendChild(grid);
-  }
-
   // Renders one row per SEC school with one column per player, so you can
   // see each player's own record picking that school rather than only the
-  // group's combined accuracy (which renderTeamGrid shows for the current
-  // season). Sorted by total picks across all players, most-picked first.
+  // group's combined accuracy. Used for both the 2026 and All-Time Accuracy
+  // by Team sections. Sorted by total picks across all players, most-picked
+  // first.
   function renderPlayerSchoolTable(wrap, data, emptyMsg) {
     wrap.innerHTML = '';
     var ranked = SEC_SCHOOLS.map(function (s) {
@@ -787,7 +763,7 @@
     if (!STATE.games.length && !STATE.history.length) {
       summary.appendChild(el('div', 'empty-note', 'No graded games yet this season — stats will fill in as weeks are scored.'));
     }
-    renderTeamGrid(teamsWrap, data, 'No graded picks yet — team accuracy fills in once games are scored.');
+    renderPlayerSchoolTable(teamsWrap, computePlayerSchoolStats(), 'No graded picks yet — team accuracy fills in once games are scored.');
 
     if (atSummary && atTeamsWrap) {
       var allTime = computeAllTimeStatsData();
