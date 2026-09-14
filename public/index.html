@@ -262,14 +262,29 @@
     resize: vertical; white-space: pre; overflow-x: auto;
   }
 
-  .editgame-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+  .editgame-rows { display: flex; flex-direction: column; }
+  .editgame-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); background: var(--paper-raised); }
   .editgame-row:last-of-type { border-bottom: none; }
+  .editgame-row.dragging { opacity: 0.55; }
   .editgame-row input {
     border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px;
     padding: 7px 9px; font-size: 12px; grid-column: span 1;
   }
   .editgame-row input.eg-matchup, .editgame-row input.eg-spread { grid-column: 1 / -1; }
-  .editgame-remove { grid-column: 1 / -1; justify-self: end; background: none; border: none; color: var(--ink-faint); font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 0; }
+  .editgame-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+  .editgame-drag {
+    cursor: grab; touch-action: none; user-select: none; font-size: 15px; color: var(--ink-faint);
+    padding: 3px 6px; border-radius: 6px; line-height: 1;
+  }
+  .editgame-drag:active { cursor: grabbing; background: var(--line-soft); }
+  .editgame-idx { font-size: 11px; font-weight: 700; color: var(--ink-faint); letter-spacing: 0.03em; flex: 1 1 auto; }
+  .editgame-remove { background: none; border: none; color: var(--ink-faint); font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 0; }
+  .eg-kickoff-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+  .eg-kickoff-label { font-size: 11px; color: var(--ink-faint); font-weight: 600; flex: 0 0 auto; }
+  .eg-kickoff-row input.eg-kickoff {
+    flex: 1 1 auto; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    border-radius: 8px; padding: 7px 9px; font-size: 12px; color-scheme: light dark;
+  }
 
   .eg-deadline { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px; padding: 7px 10px; font-size: 12.5px; color-scheme: light dark; }
 

@@ -922,7 +922,7 @@
     STATE.games.forEach(function (g, i) {
       var row = el('div', 'picker-row');
       row.appendChild(el('div', 'pr-matchup', g.matchup));
-      row.appendChild(el('div', 'pr-spread mono', g.spread));
+      row.appendChild(el('div', 'pr-spread mono', g.spread + (g.kickoff ? ('  ·  ' + fmtKickoff(g.kickoff)) : '')));
       var controls = el('div', 'pr-controls');
       var choices = el('div', 'pr-choices');
       awayHomeOrder(g).forEach(function (opt) {
@@ -1240,7 +1240,7 @@
     editBtn.type = 'button';
     editBtn.addEventListener('click', function () {
       editingGames = !editingGames;
-      if (editingGames) draftGames = viewed.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread }; });
+      if (editingGames) draftGames = viewed.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread, kickoff: g.kickoff || null }; });
       renderCommTools();
     });
     weekRow.appendChild(editBtn);
@@ -1262,30 +1262,93 @@
       warn.style.marginBottom = '8px';
       warn.textContent = 'Best to finish this before anyone picks — changing a game after picks are in can misalign existing picks for that slot.';
       editBlock.appendChild(warn);
-      var rowsWrap = el('div', '', '');
-      draftGames.forEach(function (g, i) {
+      var rowsWrap = el('div', 'editgame-rows');
+      // Rows are keyed off the game OBJECT (g), never the loop index --
+      // dragging reorders the actual DOM nodes without a full re-render (so
+      // in-progress typing never gets clobbered), and an index closure would
+      // go stale the moment two rows swap position. draftGames is only
+      // re-synced from the live DOM order once a drag ends.
+      draftGames.forEach(function (g) {
         var row = el('div', 'editgame-row');
+        row._game = g;
+        var head = el('div', 'editgame-head');
+        var handle = el('span', 'editgame-drag', '&#10303;');
+        handle.title = 'Drag to reorder';
+        handle.setAttribute('aria-label', 'Drag to reorder');
+        head.appendChild(handle);
+        var idxLabel = el('span', 'editgame-idx', '');
+        head.appendChild(idxLabel);
+        var rm = el('button', 'editgame-remove', 'Remove');
+        rm.type = 'button';
+        rm.addEventListener('click', function () {
+          var at = draftGames.indexOf(g);
+          if (at !== -1) draftGames.splice(at, 1);
+          renderCommTools();
+        });
+        head.appendChild(rm);
+        row.appendChild(head);
+
         var mIn = mkInput(g.matchup, 'Matchup (Away @ Home)', 'eg-matchup');
+        var kRow = el('div', 'eg-kickoff-row');
+        kRow.appendChild(el('span', 'eg-kickoff-label', 'Kickoff'));
+        var kIn = mkDateTimeInput(g.kickoff, 'eg-kickoff');
+        kRow.appendChild(kIn);
         var aIn = mkInput(g.teamA, 'Team A (pick label)', '');
         var bIn = mkInput(g.teamB, 'Team B (pick label)', '');
         var sIn = mkInput(g.spread, 'Spread text', 'eg-spread');
-        mIn.addEventListener('input', function () { draftGames[i].matchup = mIn.value; });
-        aIn.addEventListener('input', function () { draftGames[i].teamA = aIn.value; });
-        bIn.addEventListener('input', function () { draftGames[i].teamB = bIn.value; });
-        sIn.addEventListener('input', function () { draftGames[i].spread = sIn.value; });
-        row.appendChild(mIn); row.appendChild(sIn); row.appendChild(aIn); row.appendChild(bIn);
-        var rm = el('button', 'editgame-remove', 'Remove game');
-        rm.type = 'button';
-        rm.addEventListener('click', function () { draftGames.splice(i, 1); renderCommTools(); });
-        row.appendChild(rm);
+        mIn.addEventListener('input', function () { g.matchup = mIn.value; });
+        kIn.addEventListener('input', function () { g.kickoff = localInputToIso(kIn.value); });
+        aIn.addEventListener('input', function () { g.teamA = aIn.value; });
+        bIn.addEventListener('input', function () { g.teamB = bIn.value; });
+        sIn.addEventListener('input', function () { g.spread = sIn.value; });
+        row.appendChild(mIn); row.appendChild(kRow); row.appendChild(sIn); row.appendChild(aIn); row.appendChild(bIn);
         rowsWrap.appendChild(row);
+
+        // Pointer-based drag reorder: as the pointer crosses a sibling row's
+        // midpoint, that row swaps places in the actual DOM (not a virtual
+        // list), so every input keeps its live value and cursor focus
+        // through the drag. draftGames is only rebuilt from the final DOM
+        // order on drop, via a single renderCommTools() to refresh the
+        // "Game N" numbering.
+        handle.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+          row.classList.add('dragging');
+          function onMove(ev) {
+            var y = ev.clientY;
+            var siblings = Array.prototype.slice.call(rowsWrap.children);
+            for (var j = 0; j < siblings.length; j++) {
+              var sib = siblings[j];
+              if (sib === row) continue;
+              var r = sib.getBoundingClientRect();
+              var mid = r.top + r.height / 2;
+              var rowIsAfter = !!(sib.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING);
+              if (rowIsAfter && y < mid) { rowsWrap.insertBefore(row, sib); break; }
+              if (!rowIsAfter && y > mid) { rowsWrap.insertBefore(row, sib.nextSibling); break; }
+            }
+          }
+          function onUp(ev) {
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+            handle.removeEventListener('pointercancel', onUp);
+            try { handle.releasePointerCapture(ev.pointerId); } catch (err) {}
+            draftGames = Array.prototype.slice.call(rowsWrap.children).map(function (r) { return r._game; });
+            renderCommTools();
+          }
+          handle.addEventListener('pointermove', onMove);
+          handle.addEventListener('pointerup', onUp);
+          handle.addEventListener('pointercancel', onUp);
+        });
+      });
+      Array.prototype.slice.call(rowsWrap.children).forEach(function (row, i) {
+        row.querySelector('.editgame-idx').textContent = 'Game ' + (i + 1);
       });
       editBlock.appendChild(rowsWrap);
       var addBtn = el('button', 'ghost-btn', '+ Add Game');
       addBtn.type = 'button';
       addBtn.style.marginTop = '8px';
       addBtn.addEventListener('click', function () {
-        draftGames.push({ matchup: '', teamA: '', teamB: '', spread: '' });
+        draftGames.push({ matchup: '', teamA: '', teamB: '', spread: '', kickoff: null });
         renderCommTools();
       });
       editBlock.appendChild(addBtn);
@@ -1467,10 +1530,20 @@
     return new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  // Compact "Sat 7:30 PM" form for a per-game kickoff time, shown next to
+  // the spread on the Picks and Board tabs -- fmtDeadline()'s fuller
+  // "Sat, Sep 20, 7:30 PM" is more than a game row has room for.
+  function fmtKickoff(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  }
+
   function saveGames() {
     var viewed = getViewedWeek();
     var cleaned = draftGames.filter(function (g) { return (g.teamA || '').trim() && (g.teamB || '').trim(); })
-      .map(function (g) { return { matchup: (g.matchup || '').trim(), teamA: g.teamA.trim(), teamB: g.teamB.trim(), spread: (g.spread || '').trim() }; });
+      .map(function (g) { return { matchup: (g.matchup || '').trim(), teamA: g.teamA.trim(), teamB: g.teamB.trim(), spread: (g.spread || '').trim(), kickoff: g.kickoff || null }; });
     commAction('/api/commissioner/games', { weekKey: commWeekKey, games: cleaned }, function () {
       editingGames = false;
       showToast(viewed.kind === 'current' ? 'Week setup saved.' : viewed.label + ' updated.', 'ok');
@@ -1551,7 +1624,7 @@
       left.appendChild(el('div', 'gc-matchup', g.matchup));
       head.appendChild(left);
       var right = el('div', 'gc-side');
-      right.appendChild(el('span', 'gc-spread', g.spread));
+      right.appendChild(el('span', 'gc-spread', g.spread + (g.kickoff ? ('  ·  ' + fmtKickoff(g.kickoff)) : '')));
       var statusText = winner ? (winner === 'PUSH' ? 'Push' : 'Final') : 'Pending';
       right.appendChild(el('span', 'gc-status' + (winner ? ' final' : ''), statusText));
       head.appendChild(right);

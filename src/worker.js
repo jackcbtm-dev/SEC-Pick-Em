@@ -239,7 +239,7 @@ async function handleApi(request, env, url) {
       const viewed = getViewedWeek(state, body.weekKey);
       const cleaned = (body.games || [])
         .filter(function (g) { return (g.teamA || '').trim() && (g.teamB || '').trim(); })
-        .map(function (g) { return { matchup: (g.matchup || '').trim(), teamA: g.teamA.trim(), teamB: g.teamB.trim(), spread: (g.spread || '').trim() }; });
+        .map(function (g) { return { matchup: (g.matchup || '').trim(), teamA: g.teamA.trim(), teamB: g.teamB.trim(), spread: (g.spread || '').trim(), kickoff: g.kickoff || null }; });
       const len = cleaned.length;
 
       if (viewed.kind === 'upcoming') {
@@ -296,7 +296,7 @@ async function handleApi(request, env, url) {
       if (allGraded && queued) {
         const archived = { week: state.week, games: state.games, picks: state.picks, locks: state.locks, winners: winners };
         const nextHistory = state.history.concat([archived]);
-        const nextGames = queued.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread || '' }; });
+        const nextGames = queued.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread || '', kickoff: g.kickoff || null }; });
         const nextUpcoming = state.upcoming.slice(1);
         const emptyPicks = {}, emptyLocks = {};
         state.players.forEach(function (name) {
@@ -320,7 +320,7 @@ async function handleApi(request, env, url) {
       let label, nextGames, nextUpcoming;
       if (body.useQueued && queued) {
         label = queued.label;
-        nextGames = queued.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread || '' }; });
+        nextGames = queued.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread || '', kickoff: g.kickoff || null }; });
         nextUpcoming = state.upcoming.slice(1);
       } else {
         label = String(body.label || '').trim();
