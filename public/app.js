@@ -336,6 +336,7 @@
     'Arkansas': 'Arkansas', 'Akansas': 'Arkansas', 'Arkasas': 'Arkansas', 'Arky': 'Arkansas',
     'Auburn': 'Auburn', 'Aurburn': 'Auburn',
     'Florida': 'Florida', 'UF': 'Florida',
+    'FSU': 'FSU', 'Florida St': 'FSU', 'Florida State': 'FSU',
     'Georgia': 'Georgia', 'UGA': 'Georgia',
     'Georgia Tech': 'Georgia Tech', 'GA Tech': 'Georgia Tech', 'Ga Tech': 'Georgia Tech',
     'Kentucky': 'Kentucky', 'UK': 'Kentucky',
