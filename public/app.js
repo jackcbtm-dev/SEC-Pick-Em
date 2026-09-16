@@ -1618,16 +1618,17 @@
       stripe.appendChild(stripeA);
       stripe.appendChild(stripeB);
       card.appendChild(stripe);
+      // Stacked layout: index label, then the matchup alone on its own full-
+      // width line (so team names never get squeezed into 2-3 lines next to
+      // the spread pill), then spread/kickoff + status below it.
       var head = el('div', 'gc-head');
-      var left = el('div');
-      left.appendChild(el('div', 'gc-index', 'GAME ' + (idx + 1)));
-      left.appendChild(el('div', 'gc-matchup', g.matchup));
-      head.appendChild(left);
-      var right = el('div', 'gc-side');
-      right.appendChild(el('span', 'gc-spread', g.spread + (g.kickoff ? ('  ·  ' + fmtKickoff(g.kickoff)) : '')));
+      head.appendChild(el('div', 'gc-index', 'GAME ' + (idx + 1)));
+      head.appendChild(el('div', 'gc-matchup', g.matchup));
+      var meta = el('div', 'gc-meta');
+      meta.appendChild(el('span', 'gc-spread', g.spread + (g.kickoff ? ('  ·  ' + fmtKickoff(g.kickoff)) : '')));
       var statusText = winner ? (winner === 'PUSH' ? 'Push' : 'Final') : 'Pending';
-      right.appendChild(el('span', 'gc-status' + (winner ? ' final' : ''), statusText));
-      head.appendChild(right);
+      meta.appendChild(el('span', 'gc-status' + (winner ? ' final' : ''), statusText));
+      head.appendChild(meta);
       card.appendChild(head);
       if (allIn) {
         var boardHist = renderMatchupHistoryLine(g.teamA, g.teamB, STATE.week);
