@@ -115,6 +115,22 @@ function getViewedWeek(state, weekKey) {
   return { kind: 'current', idx: null, games: state.games, winners: state.winners, picks: state.picks, locks: state.locks };
 }
 
+// Total-points prediction ("tiebreaker") game: in Week 13, the Auburn-
+// Alabama game asks every player for a whole-number guess at the combined
+// final score. Detected from the week label + the two schools (any spelling
+// the season sheet uses), so nothing extra has to be set up per week.
+const TOTALS_WEEK_RE = /\bweek\s*13\b/i;
+function isAuburn(label) { return /^(auburn|aurburn|aub)$/i.test(String(label || '').trim()); }
+function isAlabama(label) { return /^(alabama|bama)$/i.test(String(label || '').trim()); }
+function totalsGameIdx(weekLabel, games) {
+  if (!TOTALS_WEEK_RE.test(String(weekLabel || ''))) return -1;
+  for (let i = 0; i < (games || []).length; i++) {
+    const g = games[i];
+    if ((isAuburn(g.teamA) && isAlabama(g.teamB)) || (isAlabama(g.teamA) && isAuburn(g.teamB))) return i;
+  }
+  return -1;
+}
+
 async function readJson(request) {
   try { return await request.json(); } catch (e) { return {}; }
 }
@@ -189,9 +205,20 @@ async function handleApi(request, env, url) {
     let lock = (body.lock === null || body.lock === undefined) ? null : Number(body.lock);
     if (lock !== null && (!Number.isInteger(lock) || lock < 0 || lock >= len || !body.picks[lock])) lock = null;
 
-    const nextPicks = Object.assign({}, state.picks, { [player]: body.picks });
-    const nextLocks = Object.assign({}, state.locks, { [player]: lock });
-    await saveState(env, cloneStateWith(state, { picks: nextPicks, locks: nextLocks }, player));
+    const patch = {};
+    const tIdx = totalsGameIdx(state.week, state.games);
+    if (tIdx !== -1) {
+      const raw = (body.total === null || body.total === undefined) ? '' : String(body.total).trim();
+      if (!/^\d{1,3}$/.test(raw)) {
+        const tg = state.games[tIdx];
+        return errorResponse('Enter a whole number for total points in ' + (tg.matchup || (tg.teamA + ' vs ' + tg.teamB)) + '.', 422);
+      }
+      patch.totals = Object.assign({}, state.totals || {}, { [player]: parseInt(raw, 10) });
+    }
+
+    patch.picks = Object.assign({}, state.picks, { [player]: body.picks });
+    patch.locks = Object.assign({}, state.locks, { [player]: lock });
+    await saveState(env, cloneStateWith(state, patch, player));
     return jsonResponse({ ok: true });
   }
 
@@ -267,7 +294,7 @@ async function handleApi(request, env, url) {
         await saveState(env, cloneStateWith(state, { games: cleaned, picks: nextPicks, locks: nextLocks, winners: nextWinners }, 'Commissioner'));
       } else { // history
         const nextHistory = state.history.map(function (w, i) {
-          return i !== viewed.idx ? w : { week: w.week, games: cleaned, picks: nextPicks, locks: nextLocks, winners: nextWinners };
+          return i !== viewed.idx ? w : { week: w.week, games: cleaned, picks: nextPicks, locks: nextLocks, winners: nextWinners, totals: w.totals || {} };
         });
         await saveState(env, cloneStateWith(state, { history: nextHistory }, 'Commissioner'));
       }
@@ -283,7 +310,7 @@ async function handleApi(request, env, url) {
 
       if (viewed.kind === 'history') {
         const nextHistory = state.history.map(function (w, i) {
-          return i !== viewed.idx ? w : { week: w.week, games: w.games, picks: w.picks, locks: w.locks, winners: winners };
+          return i !== viewed.idx ? w : { week: w.week, games: w.games, picks: w.picks, locks: w.locks, winners: winners, totals: w.totals || {} };
         });
         await saveState(env, cloneStateWith(state, { history: nextHistory }, 'Commissioner'));
         return jsonResponse({ ok: true, advanced: false });
@@ -294,7 +321,7 @@ async function handleApi(request, env, url) {
       const queued = state.upcoming && state.upcoming.length ? state.upcoming[0] : null;
 
       if (allGraded && queued) {
-        const archived = { week: state.week, games: state.games, picks: state.picks, locks: state.locks, winners: winners };
+        const archived = { week: state.week, games: state.games, picks: state.picks, locks: state.locks, winners: winners, totals: state.totals || {} };
         const nextHistory = state.history.concat([archived]);
         const nextGames = queued.games.map(function (g) { return { matchup: g.matchup, teamA: g.teamA, teamB: g.teamB, spread: g.spread || '', kickoff: g.kickoff || null }; });
         const nextUpcoming = state.upcoming.slice(1);
@@ -306,7 +333,7 @@ async function handleApi(request, env, url) {
         await saveState(env, cloneStateWith(state, {
           week: queued.label, games: nextGames, picks: emptyPicks, locks: emptyLocks,
           winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming,
-          pickDeadline: null
+          pickDeadline: null, totals: {}
         }, 'Commissioner'));
         return jsonResponse({ ok: true, advanced: true, archivedWeek: state.week, newWeek: queued.label });
       }
@@ -328,7 +355,7 @@ async function handleApi(request, env, url) {
         nextGames = [];
         nextUpcoming = state.upcoming || [];
       }
-      const archived = { week: state.week, games: state.games, picks: state.picks, locks: state.locks, winners: state.winners };
+      const archived = { week: state.week, games: state.games, picks: state.picks, locks: state.locks, winners: state.winners, totals: state.totals || {} };
       const nextHistory = state.history.concat([archived]);
       const emptyPicks = {}, emptyLocks = {};
       state.players.forEach(function (name) {
@@ -338,7 +365,7 @@ async function handleApi(request, env, url) {
       await saveState(env, cloneStateWith(state, {
         week: label, games: nextGames, picks: emptyPicks, locks: emptyLocks,
         winners: nextGames.map(function () { return null; }), history: nextHistory, upcoming: nextUpcoming,
-        pickDeadline: null
+        pickDeadline: null, totals: {}
       }, 'Commissioner'));
       return jsonResponse({ ok: true, week: label });
     }
