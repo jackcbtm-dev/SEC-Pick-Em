@@ -32,6 +32,7 @@
   var currentPlayer = null;
   var draft = null;
   var draftLock = null;
+  var draftTotal = ''; // the Week 13 Auburn-Bama total-points guess being edited (string, as typed)
   var draftWeek = null; // which STATE.week `draft` was built for — see syncDraftToCurrentWeek()
   var draftWinners = [];
   var draftGames = null; // populated when games editor opens
@@ -636,6 +637,24 @@
     return pts;
   }
 
+  // Total-points prediction game -- mirrors totalsGameIdx() in
+  // src/worker.js (the server is the real enforcement point). In Week 13 the
+  // Auburn-Alabama game asks every player for a whole-number guess at the
+  // combined final score.
+  var TOTALS_WEEK_RE = /\bweek\s*13\b/i;
+  function totalsGameIdx(weekLabel, games) {
+    if (!TOTALS_WEEK_RE.test(String(weekLabel || ''))) return -1;
+    for (var i = 0; i < (games || []).length; i++) {
+      var a = schoolFor(games[i].teamA), b = schoolFor(games[i].teamB);
+      if ((a === 'Auburn' && b === 'Alabama') || (a === 'Alabama' && b === 'Auburn')) return i;
+    }
+    return -1;
+  }
+  function savedTotal(name) {
+    var t = (STATE.totals || {})[name];
+    return (t === null || t === undefined) ? '' : String(t);
+  }
+
   function computeStandings() {
     var total = {};
     PLAYERS.forEach(function (p) { total[p] = 0; });
@@ -803,6 +822,7 @@
     var saved = STATE.picks[name] || [];
     draft = STATE.games.map(function (g, i) { return saved[i] || null; });
     draftLock = (STATE.locks[name] !== undefined) ? STATE.locks[name] : null;
+    draftTotal = savedTotal(name);
     draftWeek = STATE.week;
     renderRoster();
     renderPickerGate();
@@ -906,6 +926,7 @@
     var saved = STATE.picks[currentPlayer] || [];
     draft = STATE.games.map(function (g, i) { return saved[i] || null; });
     draftLock = (STATE.locks[currentPlayer] !== undefined) ? STATE.locks[currentPlayer] : null;
+    draftTotal = savedTotal(currentPlayer);
     draftWeek = STATE.week;
   }
 
@@ -920,6 +941,7 @@
       return;
     }
     var locked = picksAreLocked();
+    var totalsIdx = totalsGameIdx(STATE.week, STATE.games);
     STATE.games.forEach(function (g, i) {
       var row = el('div', 'picker-row');
       row.appendChild(el('div', 'pr-matchup', g.matchup));
@@ -965,10 +987,12 @@
       }
       controls.appendChild(lockBtn);
       row.appendChild(controls);
+      if (i === totalsIdx) row.appendChild(buildTotalInput(g, locked));
       rows.appendChild(row);
     });
     var made = draft.filter(Boolean).length;
     var lockNote = draftLock === null ? 'no Lock set' : ('Lock: Game ' + (draftLock + 1));
+    if (totalsIdx !== -1) lockNote += ' · ' + (isWholeNumber(draftTotal) ? ('total: ' + draftTotal) : 'total pts needed');
     var deadlineBanner = document.getElementById('picker-deadline-banner');
     if (deadlineBanner) {
       if (locked) {
@@ -987,6 +1011,45 @@
     var saveBtn = document.getElementById('save-btn');
     saveBtn.disabled = (capState !== 'ready') || locked;
     saveBtn.textContent = capState === 'loading' ? 'Loading…' : (locked ? 'Picks Locked' : (made === 0 ? 'Save Picks' : 'Save ' + made + ' Pick' + (made === 1 ? '' : 's')));
+  }
+
+  function isWholeNumber(v) { return /^\d{1,3}$/.test(String(v || '').trim()); }
+
+  // Required whole-number input for the total-points game. Typing updates
+  // draftTotal without re-rendering the picker, so focus is never lost; the
+  // 20s background poll already skips while an input has focus.
+  function buildTotalInput(g, locked) {
+    var wrap = el('div', 'pr-total');
+    var id = 'total-pts-input';
+    var lab = el('label', 'pr-total-label', 'Total points <span class="pr-total-req">required</span>');
+    lab.htmlFor = id;
+    var inp = document.createElement('input');
+    inp.id = id;
+    inp.type = 'number';
+    inp.inputMode = 'numeric';
+    inp.min = '0'; inp.max = '999'; inp.step = '1';
+    inp.placeholder = 'e.g. 48';
+    inp.className = 'pr-total-input mono';
+    inp.value = draftTotal;
+    inp.disabled = locked;
+    inp.setAttribute('aria-label', 'Total points scored in ' + g.matchup);
+    var hint = el('div', 'pr-total-hint', 'Your guess at the combined final score — whole number.');
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === '.' || e.key === ',' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault();
+    });
+    inp.addEventListener('input', function () {
+      draftTotal = inp.value.replace(/[^0-9]/g, '').slice(0, 3);
+      if (inp.value !== draftTotal) inp.value = draftTotal;
+      inp.classList.toggle('bad', draftTotal !== '' && !isWholeNumber(draftTotal));
+      var made = draft.filter(Boolean).length;
+      var note = draftLock === null ? 'no Lock set' : ('Lock: Game ' + (draftLock + 1));
+      note += ' · ' + (isWholeNumber(draftTotal) ? ('total: ' + draftTotal) : 'total pts needed');
+      document.getElementById('picker-progress').textContent = made + ' of ' + STATE.games.length + ' games · ' + note;
+    });
+    wrap.appendChild(lab);
+    wrap.appendChild(inp);
+    wrap.appendChild(hint);
+    return wrap;
   }
 
   function renderRosterStatus() {
@@ -1015,7 +1078,7 @@
   // queued) week — not just whatever is currently live. commWeekKey picks
   // which one; getViewedWeek() resolves it to the actual games/winners/etc.
   function currentWeekView() {
-    return { kind: 'current', idx: null, label: STATE.week, games: STATE.games, winners: STATE.winners, picks: STATE.picks, locks: STATE.locks };
+    return { kind: 'current', idx: null, label: STATE.week, games: STATE.games, winners: STATE.winners, picks: STATE.picks, locks: STATE.locks, totals: STATE.totals || {} };
   }
 
   function weekOptions() {
@@ -1035,7 +1098,7 @@
     var kind = parts[0], idx = parseInt(parts[1], 10);
     if (kind === 'history' && STATE.history[idx]) {
       var h = STATE.history[idx];
-      return { kind: 'history', idx: idx, label: h.week, games: h.games, winners: h.winners, picks: h.picks, locks: h.locks };
+      return { kind: 'history', idx: idx, label: h.week, games: h.games, winners: h.winners, picks: h.picks, locks: h.locks, totals: h.totals || {} };
     }
     if (kind === 'upcoming' && STATE.upcoming && STATE.upcoming[idx]) {
       var u = STATE.upcoming[idx];
@@ -1589,9 +1652,87 @@
       sel.onchange = function () {
         boardWeekKey = sel.value;
         renderWeekNav();
+        renderWeekStandings();
         renderGames();
       };
     }
+  }
+
+  // Board tab: points by player for whichever week is selected in the
+  // Board's week dropdown. Same scoring as the season Standings
+  // (scoreWeek). For the live week it stays hidden until picks lock, same
+  // rule as the pick grid below it -- otherwise an early-graded game would
+  // reveal who picked what.
+  function renderWeekStandings() {
+    var wrap = document.getElementById('week-standings');
+    var metaEl = document.getElementById('week-standings-meta');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    var viewed = getBoardViewedWeek();
+    var games = viewed.games || [];
+    var winners = viewed.winners || [];
+    var picks = viewed.picks || {};
+    var locks = viewed.locks || {};
+    var graded = 0, gradedNonPush = 0;
+    games.forEach(function (g, i) {
+      if (winners[i]) { graded++; if (winners[i] !== 'PUSH') gradedNonPush++; }
+    });
+    if (metaEl) metaEl.textContent = viewed.label + ' · ' + graded + '/' + games.length + ' graded';
+
+    if (!games.length) {
+      wrap.appendChild(el('div', 'empty-note', 'No games posted for ' + viewed.label + ' yet.'));
+      return;
+    }
+    if (viewed.kind === 'current' && !picksAreLocked()) {
+      wrap.appendChild(el('div', 'empty-note', 'Week standings show once picks lock.'));
+      return;
+    }
+
+    var pts = scoreWeek(games, picks, locks, winners);
+    var tIdx = totalsGameIdx(viewed.label, games);
+    var rows = PLAYERS.map(function (name) {
+      var w = 0, l = 0;
+      games.forEach(function (g, i) {
+        var win = winners[i];
+        var p = (picks[name] || [])[i];
+        if (!win || win === 'PUSH' || !p) return;
+        if (p === win) w++; else l++;
+      });
+      return { name: name, pts: pts[name] || 0, w: w, l: l, total: tIdx !== -1 ? (viewed.totals || {})[name] : undefined };
+    }).sort(function (a, b) { return b.pts - a.pts || a.name.localeCompare(b.name); });
+
+    // Bars are scaled to the most a player could have so far (every graded
+    // game right + the Lock bonus), so a full bar means a perfect week.
+    var maxPts = gradedNonPush > 0 ? gradedNonPush + 0.5 : 1;
+    var chart = el('div', 'ws-chart');
+    chart.setAttribute('role', 'table');
+    chart.setAttribute('aria-label', viewed.label + ' points by player');
+    var prevPts = null, rank = 0;
+    rows.forEach(function (r, i) {
+      if (r.pts !== prevPts) { rank = i + 1; prevPts = r.pts; }
+      var lead = rank === 1 && r.pts > 0;
+      var row = el('div', 'ws-row' + (lead ? ' lead' : ''));
+      row.setAttribute('role', 'row');
+      var tip = r.name + ': ' + fmtPts(r.pts) + ' pts · ' + r.w + '-' + r.l + ' on graded games' +
+        (r.total !== undefined ? (' · total pts guess: ' + (r.total === null || r.total === undefined ? 'none' : r.total)) : '');
+      row.title = tip;
+      row.appendChild(el('span', 'ws-rank mono', '#' + rank));
+      row.appendChild(el('span', 'ws-name', r.name));
+      var track = el('span', 'ws-track');
+      var bar = el('span', 'ws-bar');
+      bar.style.width = (r.pts > 0 ? Math.max(3, Math.min(100, 100 * r.pts / maxPts)) : 0) + '%';
+      track.appendChild(bar);
+      row.appendChild(track);
+      var val = el('span', 'ws-val');
+      val.appendChild(el('span', 'ws-pts', fmtPts(r.pts) + '<span class="unit">pts</span>'));
+      val.appendChild(el('span', 'ws-rec mono', r.w + '-' + r.l + (r.total !== undefined ? (' · ' + (r.total === null || r.total === undefined ? '—' : r.total) + ' tot') : '')));
+      row.appendChild(val);
+      chart.appendChild(row);
+    });
+    wrap.appendChild(chart);
+    var foot = 'Bar = share of max possible (' + fmtPts(gradedNonPush > 0 ? maxPts : 0) + ' pts so far)';
+    if (tIdx !== -1) foot += ' · "tot" = ' + games[tIdx].matchup + ' total-points guess';
+    chart.appendChild(el('div', 'standings-foot ws-foot', foot));
   }
 
   function renderGames() {
@@ -1607,6 +1748,7 @@
     // (or the pick split) while picks can still be changed. Past weeks are
     // already final, so they always show in full.
     var hidePicks = viewed.kind === 'current' && !picksAreLocked();
+    var boardTotalsIdx = totalsGameIdx(viewed.label, viewed.games);
     var allIn = viewed.kind === 'current' && PLAYERS.every(function (n) { return ((viewed.picks || {})[n] || []).some(Boolean); });
     viewed.games.forEach(function (g, idx) {
       var winner = (viewed.winners || [])[idx];
@@ -1659,6 +1801,10 @@
           if (isLock) whatEl.appendChild(el('span', 'star', '&#9733;'));
         } else {
           whatEl.textContent = 'No pick';
+        }
+        if (idx === boardTotalsIdx) {
+          var tv = (viewed.totals || {})[name];
+          if (tv !== null && tv !== undefined) whatEl.appendChild(el('span', 'total-tag mono', tv + ' total'));
         }
         row.appendChild(whatEl);
         picksWrap.appendChild(row);
@@ -1752,6 +1898,7 @@
     safeRender('rosterStatus', renderRosterStatus);
     safeRender('commGate', renderCommGate);
     safeRender('weekNav', renderWeekNav);
+    safeRender('weekStandings', renderWeekStandings);
     safeRender('games', renderGames);
     safeRender('stats', renderStats);
     safeRender('history', renderHistory);
@@ -1794,11 +1941,22 @@
     if (!currentPlayer || !draft) return;
     var token = getToken(currentPlayer);
     if (!token) { showToast('Enter your PIN again to save.', 'err'); renderPickerGate(); return; }
+    var tIdx = totalsGameIdx(STATE.week, STATE.games);
+    var payloadTotal = null;
+    if (tIdx !== -1) {
+      if (!isWholeNumber(draftTotal)) {
+        showToast('Enter a whole number for total points in ' + STATE.games[tIdx].matchup + ' before saving.', 'err');
+        var ti = document.getElementById('total-pts-input');
+        if (ti) { ti.classList.add('bad'); ti.focus(); }
+        return;
+      }
+      payloadTotal = parseInt(draftTotal, 10);
+    }
     var saveBtn = document.getElementById('save-btn');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving…';
 
-    apiPost('/api/picks', { token: token, picks: draft.slice(), lock: draftLock })
+    apiPost('/api/picks', { token: token, picks: draft.slice(), lock: draftLock, total: payloadTotal })
       .then(function () { return refreshState(); })
       .then(function () {
         showToast('Picks saved for ' + currentPlayer + '.', 'ok');

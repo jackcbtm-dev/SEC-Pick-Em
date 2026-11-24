@@ -399,6 +399,32 @@
   }
   .tab-btn.active .tab-dot { border-color: var(--turf); }
   .tab-btn .tab-dot.show { display: block; }
+
+  /* Board: week standings bar chart */
+  .ws-chart { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .ws-row { display: grid; grid-template-columns: 28px 74px 1fr auto; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+  .ws-row:last-child { border-bottom: none; }
+  .ws-row:hover { background: var(--line-soft); }
+  .ws-rank { font-size: 12px; color: var(--ink-faint); font-weight: 600; }
+  .ws-row.lead .ws-rank { color: var(--gold); }
+  .ws-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ws-track { position: relative; height: 10px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+  .ws-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--turf); border-radius: 0 4px 4px 0; transition: width .25s ease; }
+  .ws-row.lead .ws-bar { background: var(--gold); }
+  .ws-val { display: flex; flex-direction: column; align-items: flex-end; min-width: 92px; line-height: 1.15; }
+  .ws-pts { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .ws-pts .unit { font-size: 10px; font-weight: 500; color: var(--ink-faint); margin-left: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .ws-rec { font-size: 10.5px; color: var(--ink-faint); white-space: nowrap; }
+  .ws-foot { font-size: 11px; }
+  /* Total-points prediction (Week 13 Iron Bowl) */
+  .pr-total { display: grid; grid-template-columns: auto 96px; align-items: center; gap: 4px 10px; padding: 8px 10px; background: var(--gold-tint); border-radius: 9px; }
+  .pr-total-label { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+  .pr-total-req { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brick); margin-left: 4px; }
+  .pr-total-input { width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 7px 9px; font-size: 15px; font-weight: 600; text-align: center; -moz-appearance: textfield; }
+  .pr-total-input::-webkit-outer-spin-button, .pr-total-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pr-total-input.bad { border-color: var(--brick); }
+  .pr-total-hint { grid-column: 1 / -1; font-size: 11px; color: var(--ink-faint); }
+  .total-tag { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--ink-soft); background: var(--gold-tint); border-radius: 6px; padding: 1px 6px; margin-left: 4px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -445,6 +471,13 @@
     <section>
       <div class="section-head"><h2 id="board-title">Week Board</h2><span class="meta" id="week-meta"></span></div>
       <div class="board-week-row"><select id="board-week-select"></select></div>
+    </section>
+    <section>
+      <div class="section-head"><h2>Week Standings</h2><span class="meta" id="week-standings-meta"></span></div>
+      <div id="week-standings"></div>
+    </section>
+    <section>
+      <div class="section-head"><h2>Picks</h2><span class="meta">Game by game</span></div>
       <div id="games"></div>
     </section>
   </div>
